@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { createDepartment, createEmployee } from "@/lib/repositories/org";
 import { createKpi, recordKpiActual } from "@/lib/repositories/kpi";
-import { createTask, recordTaskOutput } from "@/lib/repositories/operations";
+import { createTask, recordTaskOutput, updateTaskStatus, updateTask, bulkUpdateTaskStatus, createSprint, updateSprintStatus, assignTaskToSprint } from "@/lib/repositories/operations";
 import { createAccountingEntry, saveDepartmentBudget } from "@/lib/repositories/finance";
 import { createProject } from "@/lib/repositories/projects";
 import { createRequisition } from "@/lib/repositories/recruiting";
@@ -82,6 +82,71 @@ export async function recordTaskOutputAction(formData: FormData) {
   revalidatePath("/operations");
 }
 
+export async function updateTaskStatusAction(formData: FormData) {
+  const taskId = String(formData.get("taskId") ?? "");
+  const status = String(formData.get("status") ?? "todo") as
+    | "todo"
+    | "in_progress"
+    | "blocked"
+    | "review"
+    | "done"
+    | "cancelled";
+  if (!taskId) return;
+  await updateTaskStatus({ taskId, status });
+  revalidatePath("/operations");
+}
+
+export async function updateTaskAction(formData: FormData) {
+  const taskId = String(formData.get("taskId") ?? "");
+  if (!taskId) return;
+
+  const input: Record<string, unknown> = { taskId };
+  const title = formData.get("title");
+  if (title !== null) input.title = String(title);
+  const description = formData.get("description");
+  if (description !== null) input.description = String(description) || null;
+  const assigneeId = formData.get("assigneeId");
+  if (assigneeId !== null) input.assigneeId = String(assigneeId) || null;
+  const departmentId = formData.get("departmentId");
+  if (departmentId !== null) input.departmentId = String(departmentId) || null;
+  const linkedKpiId = formData.get("linkedKpiId");
+  if (linkedKpiId !== null) input.linkedKpiId = String(linkedKpiId) || null;
+  const dueDate = formData.get("dueDate");
+  if (dueDate !== null) input.dueDate = String(dueDate) || null;
+  const priority = formData.get("priority");
+  if (priority !== null) input.priority = String(priority);
+  const taskType = formData.get("taskType");
+  if (taskType !== null) input.taskType = String(taskType);
+  const status = formData.get("status");
+  if (status !== null) input.status = String(status);
+  const estimatedHours = formData.get("estimatedHours");
+  if (estimatedHours !== null && String(estimatedHours) !== "") input.estimatedHours = Number(estimatedHours);
+  const actualHours = formData.get("actualHours");
+  if (actualHours !== null && String(actualHours) !== "") input.actualHours = Number(actualHours);
+  const storyPoints = formData.get("storyPoints");
+  if (storyPoints !== null && String(storyPoints) !== "") input.storyPoints = Number(storyPoints);
+  const sprintId = formData.get("sprintId");
+  if (sprintId !== null) input.sprintId = String(sprintId) || null;
+
+  await updateTask(input as Parameters<typeof updateTask>[0]);
+  revalidatePath("/operations");
+}
+
+export async function bulkUpdateTasksAction(formData: FormData) {
+  const taskIdsRaw = String(formData.get("taskIds") ?? "");
+  const status = String(formData.get("status") ?? "todo") as
+    | "todo"
+    | "in_progress"
+    | "blocked"
+    | "review"
+    | "done"
+    | "cancelled";
+  const taskIds = taskIdsRaw.split(",").filter(Boolean);
+  if (taskIds.length === 0) return;
+  await bulkUpdateTaskStatus({ taskIds, status });
+  revalidatePath("/operations");
+}
+
 export async function createAccountingEntryAction(formData: FormData) {
   await createAccountingEntry({
     accountCode: String(formData.get("accountCode") ?? ""),
@@ -145,4 +210,51 @@ export async function updateCompanySettingsAction(formData: FormData) {
     timezone: String(formData.get("timezone") ?? "Asia/Ho_Chi_Minh"),
   });
   revalidatePath("/settings");
+}
+
+// ============================================
+// SPRINT MANAGEMENT ACTIONS
+// ============================================
+
+export async function createSprintAction(formData: FormData) {
+  await createSprint({
+    name: String(formData.get("name") ?? ""),
+    goal: String(formData.get("goal") ?? ""),
+    startDate: String(formData.get("startDate") ?? ""),
+    endDate: String(formData.get("endDate") ?? ""),
+    capacity: Number(formData.get("capacity") ?? 0),
+  });
+  revalidatePath("/operations");
+}
+
+export async function startSprintAction(formData: FormData) {
+  await updateSprintStatus({
+    sprintId: String(formData.get("sprintId") ?? ""),
+    status: "active",
+  });
+  revalidatePath("/operations");
+}
+
+export async function completeSprintAction(formData: FormData) {
+  const retrospective = formData.get("retrospective");
+  await updateSprintStatus({
+    sprintId: String(formData.get("sprintId") ?? ""),
+    status: "completed",
+    metrics: {
+      velocity: Number(formData.get("velocity") ?? 0),
+      completedPoints: Number(formData.get("completedPoints") ?? 0),
+      carryOverPoints: Number(formData.get("carryOverPoints") ?? 0),
+      completionRate: Number(formData.get("completionRate") ?? 0),
+    },
+    retrospective: retrospective ? JSON.parse(String(retrospective)) : undefined,
+  });
+  revalidatePath("/operations");
+}
+
+export async function assignTaskToSprintAction(formData: FormData) {
+  await assignTaskToSprint({
+    taskId: String(formData.get("taskId") ?? ""),
+    sprintId: formData.get("sprintId") ? String(formData.get("sprintId")) : null,
+  });
+  revalidatePath("/operations");
 }

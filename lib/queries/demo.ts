@@ -8,6 +8,7 @@ import type {
   KpiActual,
   KpiTarget,
   Task,
+  Sprint,
   PayrollEntry,
   Project,
   AccountingEntry,
@@ -150,6 +151,8 @@ function mkTask(
   priority: Task["priority"] = "normal",
   taskType: Task["task_type"] = "growth",
   due = "2026-04-30",
+  sprintId: string | null = null,
+  storyPoints: number | null = null,
 ): Task {
   return {
     id,
@@ -167,22 +170,45 @@ function mkTask(
     due_date: due,
     estimated_hours: 4,
     actual_hours: null,
+    sprint_id: sprintId,
+    story_points: storyPoints,
+    parent_task_id: null,
   };
 }
 
 export const demoTasks: Task[] = [
-  mkTask("t1", "Chốt 10 đơn sales tuần này", "e8", "d001", "k101", "in_progress", "high"),
-  mkTask("t2", "Gọi 50 leads warm", "e9", "d001", "k102", "todo", "high"),
-  mkTask("t3", "Đăng 15 bài content TikTok", "e10", "d002", "k201", "in_progress"),
-  mkTask("t4", "Tối ưu ads campaign Q2", "e11", "d002", "k202", "todo", "high"),
-  mkTask("t5", "Review SLA vận hành tháng", "e6", "d003", "k30", "review"),
-  mkTask("t6", "Khảo sát CSAT tháng 4", "e13", "d004", "k40", "in_progress"),
-  mkTask("t7", "Đăng tin tuyển 3 vị trí mới", "e14", "d005", null, "done", "normal", "admin"),
-  mkTask("t8", "Chạy payroll tháng 4", "e2", "d005", null, "todo", "urgent", "admin"),
+  mkTask("t1", "Chốt 10 đơn sales tuần này", "e8", "d001", "k101", "in_progress", "high", "growth", "2026-04-30", "sp1", 5),
+  mkTask("t2", "Gọi 50 leads warm", "e9", "d001", "k102", "todo", "high", "growth", "2026-04-30", "sp1", 3),
+  mkTask("t3", "Đăng 15 bài content TikTok", "e10", "d002", "k201", "in_progress", "normal", "growth", "2026-04-30", "sp1", 8),
+  mkTask("t4", "Tối ưu ads campaign Q2", "e11", "d002", "k202", "todo", "high", "growth", "2026-04-30", "sp1", 5),
+  mkTask("t5", "Review SLA vận hành tháng", "e6", "d003", "k30", "review", "normal", "growth", "2026-04-30", "sp1", 3),
+  mkTask("t6", "Khảo sát CSAT tháng 4", "e13", "d004", "k40", "in_progress", "normal", "growth", "2026-04-28", "sp1", 2),
+  mkTask("t7", "Đăng tin tuyển 3 vị trí mới", "e14", "d005", null, "done", "normal", "admin", "2026-04-20", "sp1", 2),
+  mkTask("t8", "Chạy payroll tháng 4", "e2", "d005", null, "todo", "urgent", "admin", "2026-04-25"),
   mkTask("t9", "Tổng hợp báo cáo tài chính Q1", "e3", "d006", null, "review", "high"),
   mkTask("t10", "Thiết kế landing page mới", "e10", "d002", "k201", "blocked"),
-  mkTask("t11", "Training inbound sales", "e4", "d001", "k10", "todo"),
-  mkTask("t12", "Chuẩn hóa SOP CSKH", "e7", "d004", null, "done", "normal", "maintenance"),
+  mkTask("t11", "Training inbound sales", "e4", "d001", "k10", "todo", "normal", "growth", "2026-05-05"),
+  mkTask("t12", "Chuẩn hóa SOP CSKH", "e7", "d004", null, "done", "normal", "maintenance", "2026-04-15"),
+];
+
+export const demoSprints: Sprint[] = [
+  {
+    id: "sp1",
+    company_id: DEMO_COMPANY_ID,
+    name: "Sprint 1 - Tháng 4/2026",
+    goal: "Tăng doanh thu Q2, tối ưu marketing campaigns",
+    start_date: "2026-04-14",
+    end_date: "2026-04-28",
+    status: "active",
+    capacity: 30,
+    velocity: null,
+    completed_points: null,
+    carry_over_points: null,
+    completion_rate: null,
+    created_at: "2026-04-13T08:00:00Z",
+    completed_at: null,
+    retrospective: null,
+  },
 ];
 
 export const demoPayroll: PayrollEntry[] = demoEmployees.map((e, i) => ({

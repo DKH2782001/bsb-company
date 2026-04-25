@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C \"c:/Users/pc/Desktop/CODE/bizos-company-os-main\" remote -v)",
+      "Bash(git -C \"c:/Users/pc/Desktop/CODE/bizos-company-os-main\" log --oneline -5)",
+      "Bash(gh auth *)",
+      "Bash(git -C \"c:/Users/pc/Desktop/CODE/bizos-company-os-main\" status --short)",
+      "Bash(git -C c:/Users/pc/Desktop/CODE/bizos-company-os-main -c user.email=phong862002hn@gmail.com -c user.name=Hung commit -m ' *)",
+      "Bash(gh repo *)",
+      "Bash(gh api *)"
+    ]
+  }
+}
