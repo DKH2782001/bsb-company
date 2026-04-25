@@ -114,6 +114,31 @@ export type Task = {
   due_date: string | null;
   estimated_hours: number | null;
   actual_hours: number | null;
+  sprint_id: string | null;
+  story_points: number | null;
+  parent_task_id: string | null;
+};
+
+export type Sprint = {
+  id: string;
+  company_id: string;
+  name: string;
+  goal: string | null;
+  start_date: string;
+  end_date: string;
+  status: "planning" | "active" | "completed";
+  capacity: number;
+  velocity: number | null;
+  completed_points: number | null;
+  carry_over_points: number | null;
+  completion_rate: number | null;
+  created_at: string;
+  completed_at: string | null;
+  retrospective: {
+    went_well: string[];
+    to_improve: string[];
+    action_items: string[];
+  } | null;
 };
 
 export type PayrollEntry = {
