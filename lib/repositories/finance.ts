@@ -49,6 +49,81 @@ export async function createAccountingEntry(input: {
     entityId: data?.id ?? null,
     after: payload,
   });
+  return data?.id;
+}
+
+async function fetchAccountingEntryRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("accounting_entries") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+export async function updateAccountingEntry(input: {
+  id: string;
+  accountCode: string;
+  debit: number;
+  credit: number;
+  departmentId?: string;
+  note?: string;
+  entryDate: string;
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchAccountingEntryRow(input.id);
+
+  const table = db.from("accounting_entries") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    account_code: input.accountCode,
+    debit: input.debit,
+    credit: input.credit,
+    department_id: input.departmentId || null,
+    note: input.note || null,
+    entry_date: input.entryDate,
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "accounting_entry.update",
+    entity: "accounting_entries",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function deleteAccountingEntry(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchAccountingEntryRow(id);
+
+  const table = db.from("accounting_entries") as unknown as {
+    delete: () => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.delete().eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "accounting_entry.delete",
+    entity: "accounting_entries",
+    entityId: id,
+    before,
+  });
 }
 
 export async function saveDepartmentBudget(input: { departmentId: string; budgetMonthly: number }) {

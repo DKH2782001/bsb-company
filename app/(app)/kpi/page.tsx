@@ -11,22 +11,33 @@ import { KpiTreeGraph } from "@/components/kpi/KpiTreeGraphLazy";
 import { ProgressList } from "@/components/widgets/ProgressList";
 import { InsightCard } from "@/components/widgets/InsightCard";
 import { StatChip } from "@/components/widgets/StatChip";
-import { DataTable, type Column } from "@/components/tables/DataTable";
-import { fetchKpis, fetchKpiTargets, fetchKpiActuals, fetchTasks, fetchEmployees } from "@/lib/queries";
-import { createKpiAction, recordKpiActualAction } from "@/app/(app)/workspace/actions";
+import { KpiManager } from "@/components/kpi/KpiManager";
+import { fetchKpis, fetchKpiTargets, fetchKpiActuals, fetchTasks, fetchEmployees, fetchDepartments } from "@/lib/queries";
+import { recordKpiActualAction } from "@/app/(app)/workspace/actions";
 import { buildKpiRows } from "@/lib/kpi/cascade";
 import { Target } from "lucide-react";
 
 export default async function KpiPage() {
   const { t } = await tServer();
-  const [kpis, targets, actuals, tasks, employees] = await Promise.all([
+  const [kpis, targets, actuals, tasks, employees, departments] = await Promise.all([
     fetchKpis(),
     fetchKpiTargets(),
     fetchKpiActuals(),
     fetchTasks(),
     fetchEmployees(),
+    fetchDepartments(),
   ]);
   const rows = buildKpiRows(kpis, targets, actuals);
+  const tableRows = kpis.map((k) => {
+    const r = rows.find((x) => x.id === k.id);
+    return {
+      ...k,
+      status: r?.status ?? ("na" as const),
+      completion: r?.completion ?? null,
+      target: r?.target ?? null,
+      actual: r?.actual ?? null,
+    };
+  });
 
   const companyRows = rows.filter((r) => r.level === "company");
   const deptRows = rows.filter((r) => r.level === "department");
@@ -54,40 +65,6 @@ export default async function KpiPage() {
     .filter((x) => x.count > 0)
     .sort((a, b) => b.count - a.count)
     .slice(0, 5);
-
-  const columns: Column<(typeof rows)[number]>[] = [
-    {
-      key: "name",
-      header: "KPI",
-      render: (r) => (
-        <Link href={`/kpi/${r.id}`} className="font-medium hover:text-indigo-700">
-          {r.name}
-          <div className="text-xs text-zinc-500 font-mono">{r.code}</div>
-        </Link>
-      ),
-    },
-    { key: "level", header: "Cấp", render: (r) => <Badge variant="outline">{r.level}</Badge> },
-    { key: "unit", header: "Đơn vị", render: (r) => r.unit },
-    { key: "weight", header: "Trọng số", align: "right", render: (r) => r.weight.toFixed(2) },
-    {
-      key: "target",
-      header: "Target",
-      align: "right",
-      render: (r) => r.target?.toLocaleString("vi-VN") ?? "—",
-    },
-    {
-      key: "actual",
-      header: "Thực tế",
-      align: "right",
-      render: (r) => r.actual?.toLocaleString("vi-VN") ?? "—",
-    },
-    {
-      key: "status",
-      header: "",
-      align: "right",
-      render: (r) => <KpiStatusBadge status={r.status} completion={r.completion} />,
-    },
-  ];
 
   return (
     <div>
@@ -141,55 +118,22 @@ export default async function KpiPage() {
         </Card>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-6">
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Tạo KPI mới</CardTitle></CardHeader>
-          <CardContent>
-            <form action={createKpiAction} className="grid gap-3 md:grid-cols-4">
-              <Input name="name" placeholder="Tên KPI" required />
-              <Input name="code" placeholder="Mã KPI" />
-              <select name="level" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                <option value="department">Department</option>
-                <option value="company">Company</option>
-                <option value="team">Team</option>
-                <option value="employee">Employee</option>
-              </select>
-              <Input name="unit" placeholder="Đơn vị" defaultValue="%" />
-              <select name="ownerEmployeeId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                <option value="">Owner nhân sự</option>
-                {employees.map((employee) => (
-                  <option key={employee.id} value={employee.id}>{employee.full_name}</option>
-                ))}
-              </select>
-              <select name="parentKpiId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                <option value="">KPI cha</option>
-                {kpis.map((kpi) => (
-                  <option key={kpi.id} value={kpi.id}>{kpi.code ?? kpi.name}</option>
-                ))}
-              </select>
-              <Input name="targetValue" type="number" placeholder="Target kỳ hiện tại" />
-              <Button type="submit">Tạo KPI</Button>
-            </form>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader><CardTitle className="text-sm">Ghi actual KPI</CardTitle></CardHeader>
-          <CardContent>
-            <form action={recordKpiActualAction} className="grid gap-3 md:grid-cols-4">
-              <select name="kpiId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                <option value="">Chọn KPI</option>
-                {kpis.map((kpi) => (
-                  <option key={kpi.id} value={kpi.id}>{kpi.code ?? kpi.name}</option>
-                ))}
-              </select>
-              <Input name="period" defaultValue="2026-04" />
-              <Input name="actualValue" type="number" placeholder="Actual value" required />
-              <Button type="submit">Lưu actual</Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      <Card className="mb-6">
+        <CardHeader><CardTitle className="text-sm">Ghi actual KPI</CardTitle></CardHeader>
+        <CardContent>
+          <form action={recordKpiActualAction} className="grid gap-3 md:grid-cols-4">
+            <select name="kpiId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
+              <option value="">Chọn KPI</option>
+              {kpis.map((kpi) => (
+                <option key={kpi.id} value={kpi.id}>{kpi.code ?? kpi.name}</option>
+              ))}
+            </select>
+            <Input name="period" defaultValue="2026-04" />
+            <Input name="actualValue" type="number" placeholder="Actual value" required />
+            <Button type="submit">Lưu actual</Button>
+          </form>
+        </CardContent>
+      </Card>
 
       {/* Main: tree + lead card */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
@@ -361,7 +305,7 @@ export default async function KpiPage() {
           <CardTitle className="text-sm">Danh sách toàn bộ KPI</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} rows={rows} />
+          <KpiManager rows={tableRows} kpis={kpis} departments={departments} employees={employees} />
         </CardContent>
       </Card>
     </div>

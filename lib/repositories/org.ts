@@ -27,9 +27,31 @@ export async function getCompany() {
   });
 }
 
+async function fetchDepartmentRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("departments") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+async function fetchEmployeeRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("employees") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
 export async function createDepartment(input: {
   name: string;
-  code: string;
+  code?: string;
   scope?: string;
   budgetMonthly: number;
   headEmployeeId?: string;
@@ -60,6 +82,79 @@ export async function createDepartment(input: {
     entity: "departments",
     entityId: data?.id ?? null,
     after: payload,
+  });
+  return data?.id;
+}
+
+export async function updateDepartment(input: {
+  id: string;
+  name: string;
+  code?: string;
+  scope?: string;
+  budgetMonthly: number;
+  headEmployeeId?: string;
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchDepartmentRow(input.id);
+
+  const table = db.from("departments") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    name: input.name,
+    code: input.code || null,
+    scope: input.scope || null,
+    budget_monthly: input.budgetMonthly,
+    head_employee_id: input.headEmployeeId || null,
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "department.update",
+    entity: "departments",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function deleteDepartment(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+
+  const empCount = db.from("employees") as unknown as {
+    select: (cols: string, opts: { count: "exact"; head: true }) => {
+      eq: (c: string, v: string) => Promise<{ count: number | null }>;
+    };
+  };
+  const { count } = await empCount.select("id", { count: "exact", head: true }).eq("department_id", id);
+  if ((count ?? 0) > 0) {
+    throw new Error(`Phòng ban đang có ${count} nhân sự, không thể xoá.`);
+  }
+
+  const before = await fetchDepartmentRow(id);
+
+  const table = db.from("departments") as unknown as {
+    delete: () => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.delete().eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "department.delete",
+    entity: "departments",
+    entityId: id,
+    before,
   });
 }
 
@@ -99,6 +194,73 @@ export async function createEmployee(input: {
     entity: "employees",
     entityId: data?.id ?? null,
     after: payload,
+  });
+  return data?.id;
+}
+
+export async function updateEmployee(input: {
+  id: string;
+  fullName: string;
+  email: string;
+  departmentId?: string;
+  managerId?: string;
+  baseSalary: number;
+  employmentType?: string;
+  status?: string;
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchEmployeeRow(input.id);
+
+  const table = db.from("employees") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    full_name: input.fullName,
+    email: input.email || null,
+    department_id: input.departmentId || null,
+    manager_id: input.managerId || null,
+    base_salary: input.baseSalary,
+    employment_type: input.employmentType || "fulltime",
+    status: input.status || "active",
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "employee.update",
+    entity: "employees",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function softDeleteEmployee(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchEmployeeRow(id);
+
+  const table = db.from("employees") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.update({ status: "terminated" }).eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "employee.terminate",
+    entity: "employees",
+    entityId: id,
+    before,
+    after: { status: "terminated" },
   });
 }
 

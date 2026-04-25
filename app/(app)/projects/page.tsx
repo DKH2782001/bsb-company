@@ -2,27 +2,15 @@ import Link from "next/link";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { tServer } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { KpiCard } from "@/components/kpi/KpiCard";
 import { KpiHeroDonut } from "@/components/kpi/KpiHeroDonut";
-import { DataTable, type Column } from "@/components/tables/DataTable";
 import { ProgressList } from "@/components/widgets/ProgressList";
 import { StatChip } from "@/components/widgets/StatChip";
+import { ProjectsManager } from "@/components/projects/ProjectsManager";
 import { fetchProjects, fetchEmployees } from "@/lib/queries";
-import { createProjectAction } from "@/app/(app)/workspace/actions";
 import { formatCompactVND } from "@/lib/utils";
 import type { Project } from "@/types/domain";
 import { FolderKanban, CheckCircle2, Wallet, Target } from "lucide-react";
-
-const statusTone: Record<Project["status"], "success" | "info" | "warning" | "outline" | "danger"> = {
-  draft: "outline",
-  active: "info",
-  paused: "warning",
-  done: "success",
-  cancelled: "danger",
-};
 
 export default async function ProjectsPage() {
   const { t } = await tServer();
@@ -44,36 +32,12 @@ export default async function ProjectsPage() {
   ];
   const totalCount = statusSegments.reduce((s, x) => s + x.value, 0) || 1;
 
-  const columns: Column<Row>[] = [
-    {
-      key: "name",
-      header: "Dự án",
-      render: (p) => (
-        <Link href={`/projects/${p.id}`} className="font-medium hover:text-indigo-700">
-          {p.name}
-          <div className="text-xs text-zinc-500 font-mono">{p.code}</div>
-        </Link>
-      ),
-    },
-    { key: "owner", header: "Owner", render: (p) => p.owner_name },
-    { key: "budget", header: "Budget", align: "right", render: (p) => formatCompactVND(p.budget) },
-    { key: "start", header: "Bắt đầu", render: (p) => p.starts_at ?? "—" },
-    { key: "end", header: "Kết thúc", render: (p) => p.ends_at ?? "—" },
-    {
-      key: "status",
-      header: "",
-      align: "right",
-      render: (p) => <Badge variant={statusTone[p.status]}>{p.status}</Badge>,
-    },
-  ];
-
   return (
     <div>
       <PageHeader
         helpKey="/projects"
         title={t("proj.title")}
         description={t("proj.subtitle")}
-        actions={<Button>{t("proj.new")}</Button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -82,25 +46,6 @@ export default async function ProjectsPage() {
         <KpiCard label="Tổng budget" value={formatCompactVND(totalBudget)} accent="amber" icon={<Wallet className="h-3.5 w-3.5" />} />
         <KpiCard label="Sắp deadline" value="2" accent="red" icon={<Target className="h-3.5 w-3.5" />} />
       </div>
-
-      <Card className="mb-6">
-        <CardHeader><CardTitle>Tạo dự án mới</CardTitle></CardHeader>
-        <CardContent>
-          <form action={createProjectAction} className="grid gap-3 md:grid-cols-6">
-            <Input name="name" placeholder="Tên dự án" required />
-            <Input name="code" placeholder="Mã dự án" />
-            <select name="ownerId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-              <option value="">Owner</option>
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>{employee.full_name}</option>
-              ))}
-            </select>
-            <Input name="budget" type="number" placeholder="Budget" required />
-            <Input name="startsAt" type="date" />
-            <Button type="submit">Tạo dự án</Button>
-          </form>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         <Card className="lg:col-span-4">
@@ -166,7 +111,7 @@ export default async function ProjectsPage() {
           <CardTitle className="text-sm">Danh sách dự án</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} rows={rows} />
+          <ProjectsManager rows={rows} employees={employees} />
         </CardContent>
       </Card>
     </div>

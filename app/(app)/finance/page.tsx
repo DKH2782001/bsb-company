@@ -2,16 +2,14 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { tServer } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { KpiCard } from "@/components/kpi/KpiCard";
 import { KpiHeroDonut } from "@/components/kpi/KpiHeroDonut";
 import { AreaTrend } from "@/components/charts/AreaTrend";
 import { BarCompare } from "@/components/charts/BarCompare";
 import { ProgressList } from "@/components/widgets/ProgressList";
 import { StatChip } from "@/components/widgets/StatChip";
+import { AccountingEntriesManager } from "@/components/finance/AccountingEntriesManager";
 import { fetchAccounting, fetchPayroll, fetchDepartments, demo } from "@/lib/queries";
-import { createAccountingEntryAction } from "@/app/(app)/workspace/actions";
 import { formatCompactVND, formatPercent, formatVND } from "@/lib/utils";
 import { CircleDollarSign, TrendingUp, Wallet, Landmark, PiggyBank, Percent } from "lucide-react";
 
@@ -117,22 +115,16 @@ export default async function FinancePage() {
 
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-sm">Ghi bút toán mới</CardTitle>
+          <CardTitle className="text-sm">Bút toán kế toán</CardTitle>
         </CardHeader>
         <CardContent>
-          <form action={createAccountingEntryAction} className="grid gap-3 md:grid-cols-6">
-            <Input name="accountCode" placeholder="Account code" required />
-            <Input name="debit" type="number" placeholder="Debit" defaultValue="0" />
-            <Input name="credit" type="number" placeholder="Credit" defaultValue="0" />
-            <select name="departmentId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-              <option value="">Phòng ban</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>{department.name}</option>
-              ))}
-            </select>
-            <Input name="entryDate" type="date" />
-            <Button type="submit">Ghi bút toán</Button>
-          </form>
+          <AccountingEntriesManager
+            rows={entries.map((e) => ({
+              ...e,
+              dept_name: departments.find((d) => d.id === e.department_id)?.name ?? "—",
+            }))}
+            departments={departments}
+          />
         </CardContent>
       </Card>
 

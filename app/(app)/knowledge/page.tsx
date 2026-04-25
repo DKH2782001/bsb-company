@@ -2,14 +2,12 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { tServer } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { KpiCard } from "@/components/kpi/KpiCard";
 import { StatChip } from "@/components/widgets/StatChip";
 import { ProgressList } from "@/components/widgets/ProgressList";
-import { BookOpen, FileCheck, Shield, CheckSquare, FileText } from "lucide-react";
+import { BookOpen, FileCheck, Shield, CheckSquare } from "lucide-react";
 import { fetchSops, fetchDepartments } from "@/lib/queries";
-import { createSopAction } from "@/app/(app)/workspace/actions";
+import { KnowledgeManager } from "@/components/knowledge/KnowledgeManager";
 
 export const revalidate = 300;
 
@@ -43,7 +41,6 @@ export default async function KnowledgePage() {
         helpKey="/knowledge"
         title={t("knowledge.title")}
         description={t("knowledge.subtitle")}
-        actions={<Button>+ SOP</Button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
@@ -54,77 +51,25 @@ export default async function KnowledgePage() {
         <KpiCard label="Checklist" value="12" accent="cyan" icon={<CheckSquare className="h-3.5 w-3.5" />} />
       </div>
 
-      <Card className="mb-6">
-        <CardHeader><CardTitle className="text-sm">Tạo SOP mới</CardTitle></CardHeader>
-        <CardContent>
-          <form action={createSopAction} className="grid gap-3 md:grid-cols-4">
-            <Input name="title" placeholder="Tên SOP" required />
-            <select name="departmentId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-              <option value="">Phòng ban</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>{department.name}</option>
-              ))}
-            </select>
-            <Input name="body" placeholder="Mô tả ngắn / nội dung" />
-            <Button type="submit">Tạo SOP</Button>
-          </form>
-        </CardContent>
-      </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         <Card className="lg:col-span-8">
           <CardHeader className="pb-2">
             <CardTitle className="text-sm">SOP theo phòng ban</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {byDept.map(({ dept, docs }) => (
-                <Card key={dept.id} className="border-zinc-200">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">{dept.name}</CardTitle>
-                    <div className="text-xs text-zinc-500">{docs.length} tài liệu</div>
-                  </CardHeader>
-                  <CardContent className="space-y-2">
-                    {docs.map((d) => (
-                      <div
-                        key={d.id}
-                        className="flex items-start gap-2 rounded-lg border border-zinc-100 p-2"
-                      >
-                        <FileText className="h-4 w-4 text-indigo-600 mt-0.5 shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-sm text-zinc-900 truncate">{d.title}</div>
-                          <div className="flex items-center gap-1.5 mt-1">
-                            <Badge variant="outline">v{d.version}</Badge>
-                            {d.published ? (
-                              <Badge variant="success">Published</Badge>
-                            ) : (
-                              <Badge variant="warning">Draft</Badge>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                    {docs.length === 0 && (
-                      <div className="text-xs text-zinc-400 text-center py-3">
-                        Chưa có SOP
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
+            <KnowledgeManager sops={sops} departments={departments} />
           </CardContent>
         </Card>
 
         <div className="lg:col-span-4 space-y-4">
           <Card>
             <CardHeader className="pb-2">
-            <CardTitle className="text-sm">SOP phổ biến</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ProgressList rows={sopPopularity} />
-          </CardContent>
-        </Card>
+              <CardTitle className="text-sm">SOP phổ biến</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <ProgressList rows={sopPopularity} />
+            </CardContent>
+          </Card>
 
           <Card>
             <CardHeader className="pb-2">

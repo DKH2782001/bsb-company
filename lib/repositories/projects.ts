@@ -49,4 +49,84 @@ export async function createProject(input: {
     entityId: data?.id ?? null,
     after: payload,
   });
+  return data?.id;
+}
+
+async function fetchProjectRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("projects") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+export async function updateProject(input: {
+  id: string;
+  name: string;
+  code?: string;
+  ownerId?: string;
+  budget: number;
+  startsAt?: string;
+  endsAt?: string;
+  businessCase?: string;
+  status: "draft" | "active" | "paused" | "done" | "cancelled";
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchProjectRow(input.id);
+
+  const table = db.from("projects") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    name: input.name,
+    code: input.code || null,
+    owner_id: input.ownerId || null,
+    budget: input.budget,
+    starts_at: input.startsAt || null,
+    ends_at: input.endsAt || null,
+    business_case: input.businessCase || null,
+    status: input.status,
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "project.update",
+    entity: "projects",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function softDeleteProject(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchProjectRow(id);
+
+  const table = db.from("projects") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.update({ status: "cancelled" }).eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "project.cancel",
+    entity: "projects",
+    entityId: id,
+    before,
+    after: { status: "cancelled" },
+  });
 }

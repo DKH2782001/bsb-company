@@ -3,13 +3,10 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { tServer } from "@/lib/i18n/server";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { KpiCard } from "@/components/kpi/KpiCard";
-import { DataTable, type Column } from "@/components/tables/DataTable";
 import { ProgressList } from "@/components/widgets/ProgressList";
 import { fetchEmployees, fetchDepartments, fetchKpis } from "@/lib/queries";
-import { createEmployeeAction } from "@/app/(app)/workspace/actions";
+import { PeopleManager } from "@/components/people/PeopleManager";
 import { formatCompactVND } from "@/lib/utils";
 import { Users, UserPlus, Briefcase, TrendingUp } from "lucide-react";
 import type { Employee } from "@/types/domain";
@@ -30,41 +27,6 @@ export default async function PeoplePage() {
     kpi_count: kpis.filter((k) => k.owner_employee_id === e.id).length,
   }));
 
-  const columns: Column<Row>[] = [
-    {
-      key: "name",
-      header: "Nhân sự",
-      render: (e) => (
-        <Link href={`/people/${e.id}`} className="flex items-center gap-3 hover:text-indigo-700">
-          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
-            {e.full_name.slice(0, 1)}
-          </div>
-          <div>
-            <div className="font-medium text-zinc-900">{e.full_name}</div>
-            <div className="text-xs text-zinc-500">{e.email}</div>
-          </div>
-        </Link>
-      ),
-    },
-    { key: "dept", header: "Phòng ban", render: (e) => e.dept_name },
-    { key: "manager", header: "Manager", render: (e) => e.manager_name },
-    {
-      key: "salary",
-      header: "Lương cơ bản",
-      align: "right",
-      render: (e) => formatCompactVND(e.base_salary),
-    },
-    { key: "kpi", header: "KPI", align: "right", render: (e) => String(e.kpi_count) },
-    {
-      key: "status",
-      header: "",
-      align: "right",
-      render: (e) => (
-        <Badge variant={e.status === "active" ? "success" : "outline"}>{e.status}</Badge>
-      ),
-    },
-  ];
-
   const active = employees.filter((e) => e.status === "active").length;
   const totalPayroll = employees.reduce((s, e) => s + e.base_salary, 0);
   const deptCounts = departments.map((d) => ({
@@ -81,7 +43,6 @@ export default async function PeoplePage() {
         helpKey="/people"
         title={t("people.title")}
         description={t("people.subtitle")}
-        actions={<Button>{t("people.addNew")}</Button>}
       />
 
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 mb-6">
@@ -119,32 +80,6 @@ export default async function PeoplePage() {
           icon={<UserPlus className="h-3.5 w-3.5" />}
         />
       </div>
-
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-sm">Thêm nhân sự mới</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <form action={createEmployeeAction} className="grid gap-3 md:grid-cols-6">
-            <Input name="fullName" placeholder="Họ tên" required />
-            <Input name="email" type="email" placeholder="Email công việc" required />
-            <select name="departmentId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-              <option value="">Chọn phòng ban</option>
-              {departments.map((department) => (
-                <option key={department.id} value={department.id}>{department.name}</option>
-              ))}
-            </select>
-            <select name="managerId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-              <option value="">Chọn manager</option>
-              {employees.map((employee) => (
-                <option key={employee.id} value={employee.id}>{employee.full_name}</option>
-              ))}
-            </select>
-            <Input name="baseSalary" type="number" placeholder="Lương cơ bản" required />
-            <Button type="submit">Tạo nhân sự</Button>
-          </form>
-        </CardContent>
-      </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 mb-6">
         <Card className="lg:col-span-4">
@@ -209,7 +144,7 @@ export default async function PeoplePage() {
           <CardTitle className="text-sm">Danh sách toàn bộ</CardTitle>
         </CardHeader>
         <CardContent>
-          <DataTable columns={columns} rows={rows} />
+          <PeopleManager rows={rows} employees={employees} departments={departments} />
         </CardContent>
       </Card>
     </div>

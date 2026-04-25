@@ -1,14 +1,44 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createDepartment, createEmployee } from "@/lib/repositories/org";
-import { createKpi, recordKpiActual } from "@/lib/repositories/kpi";
+import { ZodError } from "zod";
+import {
+  createDepartment,
+  createEmployee,
+  updateDepartment,
+  deleteDepartment,
+  updateEmployee,
+  softDeleteEmployee,
+} from "@/lib/repositories/org";
+import { createKpi, recordKpiActual, updateKpi, softDeleteKpi } from "@/lib/repositories/kpi";
 import { createTask, recordTaskOutput } from "@/lib/repositories/operations";
-import { createAccountingEntry, saveDepartmentBudget } from "@/lib/repositories/finance";
-import { createProject } from "@/lib/repositories/projects";
-import { createRequisition } from "@/lib/repositories/recruiting";
-import { createSop } from "@/lib/repositories/knowledge";
+import {
+  createAccountingEntry,
+  saveDepartmentBudget,
+  updateAccountingEntry,
+  deleteAccountingEntry,
+} from "@/lib/repositories/finance";
+import { createProject, updateProject, softDeleteProject } from "@/lib/repositories/projects";
+import { createRequisition, updateRequisition, cancelRequisition } from "@/lib/repositories/recruiting";
+import { createSop, updateSop, deleteSop } from "@/lib/repositories/knowledge";
 import { updateCompanySettings } from "@/lib/repositories/org";
+import {
+  employeeUpsertSchema,
+  departmentUpsertSchema,
+  kpiUpsertSchema,
+  projectUpsertSchema,
+  requisitionUpsertSchema,
+  sopUpsertSchema,
+  accountingEntryUpsertSchema,
+  type EmployeeUpsertInput,
+  type DepartmentUpsertInput,
+  type KpiUpsertInput,
+  type ProjectUpsertInput,
+  type RequisitionUpsertInput,
+  type SopUpsertInput,
+  type AccountingEntryUpsertInput,
+} from "@/lib/validation/schemas";
+import { actionErr, actionOk, zodToFieldErrors, type ActionResult } from "@/lib/actions/result";
 
 export async function createDepartmentAction(formData: FormData) {
   await createDepartment({
@@ -135,6 +165,391 @@ export async function createSopAction(formData: FormData) {
     published: formData.get("published") === "on",
   });
   revalidatePath("/knowledge");
+}
+
+function errorMessage(err: unknown, fallback: string) {
+  if (err instanceof Error) return err.message;
+  return fallback;
+}
+
+export async function upsertEmployeeAction(
+  raw: EmployeeUpsertInput,
+): Promise<ActionResult<{ id?: string }>> {
+  let parsed: EmployeeUpsertInput;
+  try {
+    parsed = employeeUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    }
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateEmployee({
+        id: parsed.id,
+        fullName: parsed.fullName,
+        email: parsed.email,
+        departmentId: parsed.departmentId,
+        managerId: parsed.managerId,
+        baseSalary: parsed.baseSalary,
+        employmentType: parsed.employmentType,
+        status: parsed.status,
+      });
+      revalidatePath("/people");
+      revalidatePath(`/people/${parsed.id}`);
+      revalidatePath("/departments");
+      return actionOk({ id: parsed.id }, "Đã cập nhật nhân sự.");
+    }
+    const id = await createEmployee({
+      fullName: parsed.fullName,
+      email: parsed.email,
+      departmentId: parsed.departmentId,
+      managerId: parsed.managerId,
+      baseSalary: parsed.baseSalary,
+      employmentType: parsed.employmentType,
+    });
+    revalidatePath("/people");
+    revalidatePath("/departments");
+    return actionOk({ id }, "Đã tạo nhân sự mới.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu nhân sự."));
+  }
+}
+
+export async function deleteEmployeeAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID nhân sự");
+  try {
+    await softDeleteEmployee(id);
+    revalidatePath("/people");
+    revalidatePath(`/people/${id}`);
+    revalidatePath("/departments");
+    return actionOk(undefined, "Đã chuyển nhân sự sang trạng thái terminated.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể xoá nhân sự."));
+  }
+}
+
+export async function upsertDepartmentAction(
+  raw: DepartmentUpsertInput,
+): Promise<ActionResult<{ id?: string }>> {
+  let parsed: DepartmentUpsertInput;
+  try {
+    parsed = departmentUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) {
+      return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    }
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateDepartment({
+        id: parsed.id,
+        name: parsed.name,
+        code: parsed.code,
+        scope: parsed.scope,
+        budgetMonthly: parsed.budgetMonthly,
+        headEmployeeId: parsed.headEmployeeId,
+      });
+      revalidatePath("/departments");
+      revalidatePath(`/departments/${parsed.id}`);
+      revalidatePath("/settings");
+      return actionOk({ id: parsed.id }, "Đã cập nhật phòng ban.");
+    }
+    const id = await createDepartment({
+      name: parsed.name,
+      code: parsed.code,
+      scope: parsed.scope,
+      budgetMonthly: parsed.budgetMonthly,
+      headEmployeeId: parsed.headEmployeeId,
+    });
+    revalidatePath("/departments");
+    revalidatePath("/settings");
+    return actionOk({ id }, "Đã tạo phòng ban mới.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu phòng ban."));
+  }
+}
+
+export async function deleteDepartmentAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID phòng ban");
+  try {
+    await deleteDepartment(id);
+    revalidatePath("/departments");
+    revalidatePath("/settings");
+    return actionOk(undefined, "Đã xoá phòng ban.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể xoá phòng ban."));
+  }
+}
+
+// ─── KPI ──────────────────────────────────────────────────────────────────
+export async function upsertKpiAction(raw: KpiUpsertInput): Promise<ActionResult<{ id?: string }>> {
+  let parsed;
+  try {
+    parsed = kpiUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateKpi({
+        id: parsed.id,
+        name: parsed.name,
+        code: parsed.code,
+        level: parsed.level,
+        unit: parsed.unit,
+        targetFrequency: parsed.targetFrequency,
+        parentKpiId: parsed.parentKpiId,
+        ownerDepartmentId: parsed.ownerDepartmentId,
+        ownerEmployeeId: parsed.ownerEmployeeId,
+        weight: parsed.weight,
+        active: parsed.active,
+      });
+      revalidatePath("/kpi");
+      revalidatePath(`/kpi/${parsed.id}`);
+      return actionOk({ id: parsed.id }, "Đã cập nhật KPI.");
+    }
+    await createKpi({
+      name: parsed.name,
+      code: parsed.code ?? "",
+      level: parsed.level,
+      unit: parsed.unit,
+      targetFrequency: parsed.targetFrequency,
+      parentKpiId: parsed.parentKpiId,
+      ownerDepartmentId: parsed.ownerDepartmentId,
+      ownerEmployeeId: parsed.ownerEmployeeId,
+      targetValue: parsed.targetValue,
+      period: parsed.period,
+    });
+    revalidatePath("/kpi");
+    return actionOk(undefined, "Đã tạo KPI mới.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu KPI."));
+  }
+}
+
+export async function deleteKpiAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID KPI");
+  try {
+    await softDeleteKpi(id);
+    revalidatePath("/kpi");
+    return actionOk(undefined, "Đã chuyển KPI sang inactive.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể xoá KPI."));
+  }
+}
+
+// ─── Project ──────────────────────────────────────────────────────────────
+export async function upsertProjectAction(raw: ProjectUpsertInput): Promise<ActionResult<{ id?: string }>> {
+  let parsed;
+  try {
+    parsed = projectUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateProject({
+        id: parsed.id,
+        name: parsed.name,
+        code: parsed.code,
+        ownerId: parsed.ownerId,
+        budget: parsed.budget,
+        startsAt: parsed.startsAt,
+        endsAt: parsed.endsAt,
+        businessCase: parsed.businessCase,
+        status: parsed.status,
+      });
+      revalidatePath("/projects");
+      revalidatePath(`/projects/${parsed.id}`);
+      return actionOk({ id: parsed.id }, "Đã cập nhật dự án.");
+    }
+    const id = await createProject({
+      name: parsed.name,
+      code: parsed.code ?? "",
+      ownerId: parsed.ownerId,
+      budget: parsed.budget,
+      startsAt: parsed.startsAt,
+      endsAt: parsed.endsAt,
+      businessCase: parsed.businessCase,
+    });
+    revalidatePath("/projects");
+    return actionOk({ id }, "Đã tạo dự án.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu dự án."));
+  }
+}
+
+export async function deleteProjectAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID dự án");
+  try {
+    await softDeleteProject(id);
+    revalidatePath("/projects");
+    return actionOk(undefined, "Đã huỷ dự án.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể huỷ dự án."));
+  }
+}
+
+// ─── Requisition ──────────────────────────────────────────────────────────
+export async function upsertRequisitionAction(
+  raw: RequisitionUpsertInput,
+): Promise<ActionResult<{ id?: string }>> {
+  let parsed;
+  try {
+    parsed = requisitionUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateRequisition({
+        id: parsed.id,
+        title: parsed.title,
+        departmentId: parsed.departmentId,
+        headcount: parsed.headcount,
+        reason: parsed.reason,
+        status: parsed.status,
+      });
+      revalidatePath("/recruiting");
+      return actionOk({ id: parsed.id }, "Đã cập nhật requisition.");
+    }
+    const id = await createRequisition({
+      title: parsed.title,
+      departmentId: parsed.departmentId,
+      headcount: parsed.headcount,
+      reason: parsed.reason,
+    });
+    revalidatePath("/recruiting");
+    return actionOk({ id }, "Đã mở requisition.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu requisition."));
+  }
+}
+
+export async function deleteRequisitionAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID");
+  try {
+    await cancelRequisition(id);
+    revalidatePath("/recruiting");
+    return actionOk(undefined, "Đã huỷ requisition.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể huỷ requisition."));
+  }
+}
+
+// ─── SOP ──────────────────────────────────────────────────────────────────
+export async function upsertSopAction(raw: SopUpsertInput): Promise<ActionResult<{ id?: string }>> {
+  let parsed;
+  try {
+    parsed = sopUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateSop({
+        id: parsed.id,
+        title: parsed.title,
+        departmentId: parsed.departmentId,
+        body: parsed.body,
+        published: parsed.published,
+      });
+      revalidatePath("/knowledge");
+      return actionOk({ id: parsed.id }, "Đã cập nhật SOP (tăng version).");
+    }
+    const id = await createSop({
+      title: parsed.title,
+      departmentId: parsed.departmentId,
+      body: parsed.body,
+      published: parsed.published,
+    });
+    revalidatePath("/knowledge");
+    return actionOk({ id }, "Đã tạo SOP.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu SOP."));
+  }
+}
+
+export async function deleteSopAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID");
+  try {
+    await deleteSop(id);
+    revalidatePath("/knowledge");
+    return actionOk(undefined, "Đã xoá SOP.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể xoá SOP."));
+  }
+}
+
+// ─── Accounting Entry ─────────────────────────────────────────────────────
+export async function upsertAccountingEntryAction(
+  raw: AccountingEntryUpsertInput,
+): Promise<ActionResult<{ id?: string }>> {
+  let parsed;
+  try {
+    parsed = accountingEntryUpsertSchema.parse(raw);
+  } catch (err) {
+    if (err instanceof ZodError) return actionErr("Dữ liệu không hợp lệ", zodToFieldErrors(err));
+    return actionErr("Dữ liệu không hợp lệ");
+  }
+
+  try {
+    if (parsed.id) {
+      await updateAccountingEntry({
+        id: parsed.id,
+        accountCode: parsed.accountCode,
+        debit: parsed.debit,
+        credit: parsed.credit,
+        departmentId: parsed.departmentId,
+        note: parsed.note,
+        entryDate: parsed.entryDate,
+      });
+    } else {
+      await createAccountingEntry({
+        accountCode: parsed.accountCode,
+        debit: parsed.debit,
+        credit: parsed.credit,
+        departmentId: parsed.departmentId,
+        note: parsed.note,
+        entryDate: parsed.entryDate,
+      });
+    }
+    revalidatePath("/finance");
+    revalidatePath("/finance/pnl");
+    revalidatePath("/finance/balance-sheet");
+    revalidatePath("/finance/cashflow");
+    return actionOk(
+      parsed.id ? { id: parsed.id } : undefined,
+      parsed.id ? "Đã cập nhật bút toán." : "Đã ghi bút toán mới.",
+    );
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể lưu bút toán."));
+  }
+}
+
+export async function deleteAccountingEntryAction(id: string): Promise<ActionResult> {
+  if (!id) return actionErr("Thiếu ID");
+  try {
+    await deleteAccountingEntry(id);
+    revalidatePath("/finance");
+    revalidatePath("/finance/pnl");
+    return actionOk(undefined, "Đã xoá bút toán.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể xoá bút toán."));
+  }
 }
 
 export async function updateCompanySettingsAction(formData: FormData) {

@@ -116,3 +116,96 @@ export async function recordKpiActual(input: { kpiId: string; period: string; ac
     after: input,
   });
 }
+
+async function fetchKpiRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("kpis") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+export async function updateKpi(input: {
+  id: string;
+  name: string;
+  code?: string;
+  level: "company" | "department" | "team" | "employee";
+  unit: string;
+  targetFrequency: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+  parentKpiId?: string;
+  ownerDepartmentId?: string;
+  ownerEmployeeId?: string;
+  weight: number;
+  active: boolean;
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchKpiRow(input.id);
+
+  const table = db.from("kpis") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    name: input.name,
+    code: input.code || null,
+    level: input.level,
+    unit: input.unit || "%",
+    target_frequency: input.targetFrequency,
+    parent_kpi_id: input.parentKpiId || null,
+    owner_department_id: input.ownerDepartmentId || null,
+    owner_employee_id: input.ownerEmployeeId || null,
+    weight: input.weight,
+    active: input.active,
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "kpi.update",
+    entity: "kpis",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function softDeleteKpi(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchKpiRow(id);
+
+  const childCount = db.from("kpis") as unknown as {
+    select: (cols: string, opts: { count: "exact"; head: true }) => {
+      eq: (c: string, v: string) => Promise<{ count: number | null }>;
+    };
+  };
+  const { count } = await childCount.select("id", { count: "exact", head: true }).eq("parent_kpi_id", id);
+  if ((count ?? 0) > 0) {
+    throw new Error(`KPI có ${count} KPI con đang trỏ tới — hãy xoá hoặc tách riêng các KPI con trước.`);
+  }
+
+  const table = db.from("kpis") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.update({ active: false }).eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "kpi.deactivate",
+    entity: "kpis",
+    entityId: id,
+    before,
+    after: { active: false },
+  });
+}

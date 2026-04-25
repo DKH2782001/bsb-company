@@ -109,11 +109,30 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 
 **Mục tiêu:** Biến BIZOS từ demo-grade thành production-grade trước khi build tính năng mới.
 
+> **Tiến độ thực thi:**
+> - [x] **Đợt A** — Form primitives (RHF+Zod) + CRUD Update/Delete cho **Employees & Departments** ✅
+> - [x] **Đợt A2** — CRUD Update/Delete cho **KPIs, Projects, Job Requisitions, SOPs, Accounting Entries** ✅
+> - [ ] Đợt B — Audit middleware tự động + UI Audit log đọc data thật
+> - [ ] Đợt C — Notifications Realtime + center (email Resend hoãn — cần API key)
+> - [ ] Đợt D — Storage buckets + Upload UI (cần tạo buckets trên Supabase)
+> - [ ] Đợt E — Bulk Import/Export (SheetJS + bảng `import_jobs`)
+> - [ ] Đợt F — Vitest + GitHub Actions CI (Sentry/PostHog hoãn — cần DSN)
+> - [ ] Đợt G — Auth/MFA/Session/Reset password/Rate limit (cần bật MFA trên Supabase)
+> - [ ] Đợt H — Mobile responsive + bottom nav + PWA
+>
+> **Loại trừ:** Module Operations (`/operations`, `lib/repositories/operations.ts`, các bảng `tasks*`) — không động vào trong Phase 0.
+
 #### 0.1. CRUD đầy đủ + Form thực
-- Implement Update / Delete / Soft-delete cho **tất cả entity** đang có (employees, departments, KPIs, tasks, projects, ...)
-- Mỗi form dùng React Hook Form + Zod validation (đã có trong stack)
-- Loading state, error state, optimistic UI
-- Confirm dialog cho Delete (đặc biệt khi có dữ liệu liên quan)
+- [x] **Form primitives RHF + Zod**: `lib/validation/schemas.ts`, `lib/actions/result.ts`, `components/ui/{toast,dialog,confirm-dialog,form-field}.tsx`, Toaster mount ở `app/layout.tsx`.
+- [x] **Employees**: Create/Edit qua dialog (RHF + Zod), Soft-delete (set `status=terminated`), Confirm dialog. Action: `upsertEmployeeAction`, `deleteEmployeeAction`.
+- [x] **Departments**: Create/Edit qua dialog, Hard-delete (chặn nếu còn nhân sự), Confirm dialog. Action: `upsertDepartmentAction`, `deleteDepartmentAction`.
+- [x] Loading state (isSubmitting disable button), error state (server error banner + field errors map từ Zod), toast success/fail.
+- [x] **KPIs**: Edit dialog 11 trường (level, đơn vị, owner, weight, parent, active...), soft-delete (`active=false`), chặn xoá nếu còn KPI con. Action: `upsertKpiAction`, `deleteKpiAction`.
+- [x] **Projects**: Edit dialog 8 trường + status enum, soft-delete (`status=cancelled`). Action: `upsertProjectAction`, `deleteProjectAction`.
+- [x] **Job Requisitions**: Edit dialog + cancel (set `status=cancelled, closed_at=now`). Action: `upsertRequisitionAction`, `deleteRequisitionAction`.
+- [x] **SOPs**: Edit dialog (textarea body, auto-bump version mỗi lần edit), hard delete. Action: `upsertSopAction`, `deleteSopAction`.
+- [x] **Accounting Entries**: Inline manager (table với Edit/Delete inline), validate ít nhất 1 vế (debit hoặc credit > 0). Action: `upsertAccountingEntryAction`, `deleteAccountingEntryAction`.
+- [ ] Optimistic UI (đang dùng `router.refresh()` — đủ cho hiện tại; có thể nâng `useOptimistic` ở đợt sau nếu cần).
 
 #### 0.2. Bulk Import / Export
 - Import từ Excel/CSV cho: nhân viên, KPI, task, hợp đồng, accounting entries

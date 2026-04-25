@@ -43,4 +43,77 @@ export async function createSop(input: {
     entityId: data?.id ?? null,
     after: payload,
   });
+  return data?.id;
+}
+
+async function fetchSopRow(id: string) {
+  const db = await getDbClientOrThrow();
+  const table = db.from("sop_documents") as unknown as {
+    select: (cols: string) => {
+      eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Record<string, unknown> | null }> };
+    };
+  };
+  const { data } = await table.select("*").eq("id", id).maybeSingle();
+  return data;
+}
+
+export async function updateSop(input: {
+  id: string;
+  title: string;
+  departmentId?: string;
+  body?: string;
+  published: boolean;
+}) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchSopRow(input.id);
+  const prevVersion = typeof before?.version === "number" ? (before.version as number) : 1;
+
+  const table = db.from("sop_documents") as unknown as {
+    update: (values: Record<string, unknown>) => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+
+  const payload = {
+    title: input.title,
+    department_id: input.departmentId || null,
+    body: input.body || null,
+    published: input.published,
+    version: prevVersion + 1,
+  };
+
+  const { error } = await table.update(payload).eq("id", input.id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "sop.update",
+    entity: "sop_documents",
+    entityId: input.id,
+    before,
+    after: payload,
+  });
+}
+
+export async function deleteSop(id: string) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+
+  const db = await getDbClientOrThrow();
+  const before = await fetchSopRow(id);
+
+  const table = db.from("sop_documents") as unknown as {
+    delete: () => { eq: (c: string, v: string) => Promise<{ error: unknown }> };
+  };
+  const { error } = await table.delete().eq("id", id);
+  if (error) throw error;
+
+  await writeAuditLog({
+    action: "sop.delete",
+    entity: "sop_documents",
+    entityId: id,
+    before,
+  });
 }
