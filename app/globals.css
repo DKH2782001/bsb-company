@@ -1,0 +1,52 @@
+@import "tailwindcss";
+
+:root {
+  --background: #f5f7ff;
+  --foreground: #151a34;
+  --surface: #ffffff;
+  --surface-alt: #f3f5ff;
+  --brand-50: #eef0ff;
+  --brand-100: #dde2ff;
+  --brand-500: #6d5ef7;
+  --brand-600: #5848f6;
+  --brand-700: #4a3edf;
+  --text-strong: #1f2554;
+  --text-soft: #70789e;
+  --line-soft: #e6eafd;
+  --shadow-soft: 0 12px 30px rgba(73, 80, 146, 0.08);
+  --shadow-card: 0 16px 40px rgba(93, 96, 180, 0.1);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+html,
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+body {
+  font-family: var(--font-sans), system-ui, -apple-system, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background:
+    radial-gradient(circle at top left, rgba(111, 101, 247, 0.08), transparent 28%),
+    radial-gradient(circle at top right, rgba(65, 91, 255, 0.06), transparent 20%),
+    var(--background);
+}
+
+.reactflow-wrapper .react-flow__attribution {
+  display: none;
+}
+
+* {
+  border-color: var(--line-soft);
+}
+
+::selection {
+  background: rgba(109, 94, 247, 0.18);
+}
