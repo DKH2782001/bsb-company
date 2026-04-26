@@ -112,13 +112,16 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 > **Tiến độ thực thi:**
 > - [x] **Đợt A** — Form primitives (RHF+Zod) + CRUD Update/Delete cho **Employees & Departments** ✅
 > - [x] **Đợt A2** — CRUD Update/Delete cho **KPIs, Projects, Job Requisitions, SOPs, Accounting Entries** ✅
-> - [ ] Đợt B — Audit middleware tự động + UI Audit log đọc data thật
-> - [ ] Đợt C — Notifications Realtime + center (email Resend hoãn — cần API key)
-> - [ ] Đợt D — Storage buckets + Upload UI (cần tạo buckets trên Supabase)
-> - [ ] Đợt E — Bulk Import/Export (SheetJS + bảng `import_jobs`)
-> - [ ] Đợt F — Vitest + GitHub Actions CI (Sentry/PostHog hoãn — cần DSN)
-> - [ ] Đợt G — Auth/MFA/Session/Reset password/Rate limit (cần bật MFA trên Supabase)
-> - [ ] Đợt H — Mobile responsive + bottom nav + PWA
+> - [x] **Đợt B** — Audit metadata (IP/UA/request_id) + UI Audit log đọc data thật + filter multi-select + pagination + export CSV ✅
+> - [x] **Đợt C** — Notifications Realtime + Notification Center trong Topbar (email hoãn vô thời hạn theo yêu cầu) ✅
+> - [x] **Đợt D** — Storage buckets + Upload UI (migration + local bucket config + Profile upload UI) ✅
+>   - Cần cung cấp khi chạy thật: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, rồi apply migration `20260426133000_storage_buckets.sql`.
+> - [x] **Đợt E** — Bulk Import/Export với SheetJS (Employees / KPIs / Accounting Entries / Requisitions). Operations bị Phase 0 loại trừ ✅
+> - [x] **Đợt F** — Vitest + GitHub Actions CI (lint + typecheck + test) ✅
+>   - Cần cung cấp khi bật observability: `SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`.
+> - [ ] Đợt G — Auth/MFA/Session/Reset password/Rate limit (code scaffold đã sẵn; chờ Supabase Auth thật để test end-to-end)
+>   - Cần cung cấp khi chạy thật: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`; bật Email Auth, thêm redirect URL `/update-password`, bật MFA TOTP và cấu hình SMTP/email provider.
+> - [~] ~~Đợt H — Mobile responsive + bottom nav + PWA~~ — **BỎ** (không làm mobile app)
 >
 > **Loại trừ:** Module Operations (`/operations`, `lib/repositories/operations.ts`, các bảng `tasks*`) — không động vào trong Phase 0.
 
@@ -970,7 +973,7 @@ Nếu bạn bắt đầu ngay tuần này, đây là việc cần làm:
 - [ ] Chạy schema.sql + seed.sql, test demo flow
 - [ ] Đọc kỹ code 5 module quan trọng nhất: KPI engine, payroll engine, supabase queries, RLS policies, layout
 - [ ] List 10 thay đổi nhỏ cần làm để app "production-ready"
-- [ ] Setup GitHub Actions CI cơ bản
+- [x] Setup GitHub Actions CI cơ bản
 - [ ] Setup Sentry + PostHog free tier
 
 ### Tuần 2: Foundation

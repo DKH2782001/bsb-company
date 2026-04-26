@@ -1,7 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { saveUserPreferences, updateEmployeeProfile } from "@/lib/repositories/profile";
+import { redirect } from "next/navigation";
+import { saveUserPreferences, updateEmployeeAvatar, updateEmployeeProfile } from "@/lib/repositories/profile";
+import { createClientOrNull } from "@/lib/supabase/server";
 
 export async function updateProfileAction(formData: FormData) {
   await updateEmployeeProfile({
@@ -32,4 +34,23 @@ export async function updatePreferencesAction(formData: FormData) {
   });
 
   revalidatePath("/profile");
+}
+
+export async function updateAvatarAction(formData: FormData) {
+  await updateEmployeeAvatar({
+    avatarUrl: String(formData.get("avatarUrl") ?? ""),
+    storagePath: String(formData.get("storagePath") ?? "") || null,
+  });
+
+  revalidatePath("/profile");
+}
+
+export async function signOutOtherSessionsAction() {
+  const supabase = await createClientOrNull();
+  if (supabase) {
+    await supabase.auth.signOut({ scope: "others" });
+  }
+
+  revalidatePath("/profile");
+  redirect("/profile?security=other-sessions-signed-out");
 }

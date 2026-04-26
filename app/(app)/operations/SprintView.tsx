@@ -2,8 +2,54 @@
 
 import { useState, useTransition } from "react";
 import type { Task, Sprint, Employee } from "@/types/domain";
-import { getSprintHealth, calculateSprintMetrics, getBacklogTasks, formatDaysLeft, FIBONACCI_POINTS } from "./sprint-utils";
+import { getSprintHealth, calculateSprintMetrics, getBacklogTasks, formatDaysLeft, FIBONACCI_POINTS, isTaskOverdue } from "./sprint-utils";
 import { assignTaskToSprintAction, createSprintAction, startSprintAction, completeSprintAction, updateTaskAction } from "@/app/(app)/workspace/actions";
+import { SprintKanban } from "./SprintKanban";
+import { SprintHistoryModal } from "./SprintHistoryModal";
+import { SprintAnalyticsModal } from "./SprintAnalyticsModal";
+import { MultiSelect } from "./MultiSelect";
+import { X, Search, AlertTriangle } from "lucide-react";
+
+type SprintFilters = {
+  search: string;
+  priority: string[];
+  status: string[];
+  assigneeId: string[];
+  overdueOnly: boolean;
+};
+
+const EMPTY_SPRINT_FILTERS: SprintFilters = {
+  search: "",
+  priority: [],
+  status: [],
+  assigneeId: [],
+  overdueOnly: false,
+};
+
+const SPRINT_PRIORITY_OPTS = [
+  { value: "urgent", label: "Urgent", swatch: "bg-red-500" },
+  { value: "high",   label: "High",   swatch: "bg-orange-500" },
+  { value: "normal", label: "Normal", swatch: "bg-yellow-500" },
+  { value: "low",    label: "Low",    swatch: "bg-emerald-500" },
+];
+const SPRINT_STATUS_OPTS = [
+  { value: "todo",        label: "To do",     swatch: "bg-zinc-400" },
+  { value: "in_progress", label: "Đang làm",  swatch: "bg-amber-500" },
+  { value: "review",      label: "Review",    swatch: "bg-violet-500" },
+  { value: "blocked",     label: "Blocked",   swatch: "bg-red-500" },
+  { value: "done",        label: "Hoàn thành", swatch: "bg-emerald-500" },
+];
+
+function applySprintFilters(tasks: Task[], f: SprintFilters): Task[] {
+  return tasks.filter((t) => {
+    if (f.search && !t.title.toLowerCase().includes(f.search.toLowerCase())) return false;
+    if (f.priority.length > 0 && !f.priority.includes(t.priority)) return false;
+    if (f.status.length > 0 && !f.status.includes(t.status)) return false;
+    if (f.assigneeId.length > 0 && (!t.assignee_id || !f.assigneeId.includes(t.assignee_id))) return false;
+    if (f.overdueOnly && !isTaskOverdue(t)) return false;
+    return true;
+  });
+}
 
 // ============================================
 // SPRINT VIEW — ported from AI Task Tracker
@@ -13,20 +59,46 @@ type SprintViewProps = {
   tasks: Task[];
   sprints: Sprint[];
   employees: Employee[];
+  onOpenDetail?: (id: string) => void;
 };
 
-export default function SprintView({ tasks, sprints, employees }: SprintViewProps) {
+export default function SprintView({ tasks, sprints, employees, onOpenDetail }: SprintViewProps) {
   const activeSprint = sprints.find((s) => s.status === "active") || null;
   const planningSprint = sprints.find((s) => s.status === "planning") || null;
   const currentSprint = activeSprint || planningSprint;
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
   const [storyPointsTaskId, setStoryPointsTaskId] = useState<string | null>(null);
+  const [activeView, setActiveView] = useState<"planning" | "kanban">(activeSprint ? "kanban" : "planning");
+  const [filters, setFilters] = useState<SprintFilters>(EMPTY_SPRINT_FILTERS);
   const [isPending, startTransition] = useTransition();
 
-  const backlogTasks = getBacklogTasks(tasks);
-  const sprintTasks = currentSprint ? tasks.filter((t) => t.sprint_id === currentSprint.id) : [];
+  const backlogAll = getBacklogTasks(tasks);
+  const sprintTasksAll = currentSprint ? tasks.filter((t) => t.sprint_id === currentSprint.id) : [];
+  const backlogTasks = applySprintFilters(backlogAll, filters);
+  const sprintTasks = applySprintFilters(sprintTasksAll, filters);
+
+  const filterChips: { key: string; label: string; onRemove: () => void }[] = [];
+  filters.priority.forEach((v) => filterChips.push({
+    key: `p:${v}`,
+    label: `Ưu tiên: ${SPRINT_PRIORITY_OPTS.find((o) => o.value === v)?.label ?? v}`,
+    onRemove: () => setFilters((f) => ({ ...f, priority: f.priority.filter((x) => x !== v) })),
+  }));
+  filters.status.forEach((v) => filterChips.push({
+    key: `s:${v}`,
+    label: `Trạng thái: ${SPRINT_STATUS_OPTS.find((o) => o.value === v)?.label ?? v}`,
+    onRemove: () => setFilters((f) => ({ ...f, status: f.status.filter((x) => x !== v) })),
+  }));
+  filters.assigneeId.forEach((v) => filterChips.push({
+    key: `a:${v}`,
+    label: `Assignee: ${employees.find((e) => e.id === v)?.full_name ?? v}`,
+    onRemove: () => setFilters((f) => ({ ...f, assigneeId: f.assigneeId.filter((x) => x !== v) })),
+  }));
+  if (filters.overdueOnly) filterChips.push({ key: "o", label: "Chỉ quá hạn", onRemove: () => setFilters((f) => ({ ...f, overdueOnly: false })) });
+  const hasActiveFilters = filterChips.length > 0 || filters.search;
 
   function handleAssignToSprint(taskId: string) {
     if (!currentSprint) return;
@@ -108,6 +180,12 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowAnalyticsModal(true)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all">
+              📊 Analytics
+            </button>
+            <button onClick={() => setShowHistoryModal(true)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+              📚 Lịch sử
+            </button>
             {currentSprint.status === "planning" && (
               <button onClick={() => { startTransition(async () => { const fd = new FormData(); fd.set("sprintId", currentSprint.id); await startSprintAction(fd); }); }} disabled={sprintTasks.length === 0 || isPending} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50 transition-all shadow-md">
                 🚀 Bắt đầu Sprint
@@ -153,7 +231,72 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
         ))}
       </div>
 
-      {/* Main: Backlog + Sprint Panel */}
+      {/* Sprint Filter Bar */}
+      <div>
+        <div className="flex flex-wrap items-center gap-2 p-3 bg-white/80 rounded-xl border border-slate-200/60 shadow-sm">
+          <div className="relative flex-1 min-w-[180px] max-w-[260px]">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
+            <input
+              placeholder="Tìm task trong sprint/backlog..."
+              value={filters.search}
+              onChange={(e) => setFilters((f) => ({ ...f, search: e.target.value }))}
+              className="w-full pl-8 pr-3 h-9 rounded-lg border border-slate-200 bg-white text-sm"
+            />
+          </div>
+          <MultiSelect placeholder="Ưu tiên" options={SPRINT_PRIORITY_OPTS} values={filters.priority} onChange={(v) => setFilters((f) => ({ ...f, priority: v }))} />
+          <MultiSelect placeholder="Trạng thái" options={SPRINT_STATUS_OPTS} values={filters.status} onChange={(v) => setFilters((f) => ({ ...f, status: v }))} />
+          <MultiSelect placeholder="Assignee" options={employees.map((e) => ({ value: e.id, label: e.full_name }))} values={filters.assigneeId} onChange={(v) => setFilters((f) => ({ ...f, assigneeId: v }))} />
+          <button
+            onClick={() => setFilters((f) => ({ ...f, overdueOnly: !f.overdueOnly }))}
+            className={`flex items-center gap-1 h-9 px-3 rounded-lg border text-xs font-medium transition-all ${filters.overdueOnly ? "bg-red-50 border-red-300 text-red-700" : "border-slate-200 bg-white text-slate-500 hover:text-red-600"}`}
+          >
+            <AlertTriangle className="h-3 w-3" />
+            Quá hạn
+          </button>
+          {hasActiveFilters && (
+            <button onClick={() => setFilters(EMPTY_SPRINT_FILTERS)} className="h-9 px-3 text-xs text-slate-500 hover:text-red-500 flex items-center gap-1">
+              <X className="h-3.5 w-3.5" />
+              Xoá lọc
+            </button>
+          )}
+        </div>
+        {filterChips.length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {filterChips.map((c) => (
+              <span key={c.key} className="flex items-center gap-1 px-2 py-1 rounded-full bg-indigo-100 text-indigo-700 text-[11px] font-medium">
+                {c.label}
+                <button onClick={c.onRemove} className="hover:text-red-500"><X className="h-3 w-3" /></button>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* View switcher (chỉ khi sprint active) */}
+      {currentSprint.status === "active" && (
+        <div className="flex gap-1 p-1 bg-slate-100 rounded-xl w-fit">
+          <button
+            onClick={() => setActiveView("kanban")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeView === "kanban" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            🎯 Kanban
+          </button>
+          <button
+            onClick={() => setActiveView("planning")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeView === "planning" ? "bg-white text-slate-800 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+          >
+            📋 Backlog / Sprint
+          </button>
+        </div>
+      )}
+
+      {/* Sprint Kanban (active + kanban view) */}
+      {currentSprint.status === "active" && activeView === "kanban" && (
+        <SprintKanban tasks={sprintTasks} employees={employees} onOpenDetail={onOpenDetail} />
+      )}
+
+      {/* Main: Backlog + Sprint Panel (planning view hoặc planning sprint) */}
+      {(currentSprint.status === "planning" || activeView === "planning") && (
       <div className="grid grid-cols-1 lg:grid-cols-5 gap-5">
         {/* Backlog */}
         <div className="lg:col-span-2 bg-white/80 rounded-2xl p-4 border border-slate-200/60 shadow-sm">
@@ -165,7 +308,7 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
             {backlogTasks.length === 0 ? (
               <p className="text-center text-sm text-slate-400 py-8">Tất cả tasks đã được gắn sprint</p>
             ) : backlogTasks.map((task) => (
-              <BacklogCard key={task.id} task={task} employees={employees} onAdd={() => handleAssignToSprint(task.id)} onSetPoints={() => setStoryPointsTaskId(task.id)} isPending={isPending} />
+              <BacklogCard key={task.id} task={task} employees={employees} onAdd={() => handleAssignToSprint(task.id)} onSetPoints={() => setStoryPointsTaskId(task.id)} onOpen={() => onOpenDetail?.(task.id)} isPending={isPending} />
             ))}
           </div>
         </div>
@@ -185,18 +328,22 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
             {sprintTasks.length === 0 ? (
               <p className="text-center text-sm text-slate-400 py-8">Thêm tasks từ Backlog vào Sprint</p>
             ) : sprintTasks.map((task) => (
-              <SprintTaskCard key={task.id} task={task} employees={employees} onRemove={() => handleRemoveFromSprint(task.id)} onSetPoints={() => setStoryPointsTaskId(task.id)} isPending={isPending} />
+              <SprintTaskCard key={task.id} task={task} employees={employees} onRemove={() => handleRemoveFromSprint(task.id)} onSetPoints={() => setStoryPointsTaskId(task.id)} onOpen={() => onOpenDetail?.(task.id)} isPending={isPending} />
             ))}
           </div>
         </div>
       </div>
+      )}
 
-      {/* Sprint History */}
+      {/* Sprint History inline preview */}
       {sprints.filter((s) => s.status === "completed").length > 0 && (
         <div className="bg-white/80 rounded-2xl p-4 border border-slate-200/60 shadow-sm">
-          <h3 className="font-semibold text-slate-700 mb-3">📚 Sprint History</h3>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-semibold text-slate-700">📚 Sprint gần đây</h3>
+            <button onClick={() => setShowHistoryModal(true)} className="text-xs text-indigo-600 hover:underline">Xem tất cả →</button>
+          </div>
           <div className="space-y-2">
-            {sprints.filter((s) => s.status === "completed").map((s) => (
+            {sprints.filter((s) => s.status === "completed").slice(-3).reverse().map((s) => (
               <div key={s.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
                 <div>
                   <span className="font-medium text-sm text-slate-700">{s.name}</span>
@@ -214,7 +361,9 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
 
       {/* Modals */}
       {showCreateModal && <CreateSprintModal onClose={() => setShowCreateModal(false)} sprints={sprints} />}
-      {showCompleteModal && activeSprint && <CompleteSprintModal sprint={activeSprint} tasks={tasks} onClose={() => setShowCompleteModal(false)} />}
+      {showCompleteModal && activeSprint && <CompleteSprintModal sprint={activeSprint} tasks={tasks} sprints={sprints} onClose={() => setShowCompleteModal(false)} />}
+      {showHistoryModal && <SprintHistoryModal sprints={sprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
+      {showAnalyticsModal && <SprintAnalyticsModal sprints={sprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
       {storyPointsTaskId && <StoryPointsModal taskId={storyPointsTaskId} task={tasks.find((t) => t.id === storyPointsTaskId)!} onSelect={handleSetStoryPoints} onClose={() => setStoryPointsTaskId(null)} />}
     </div>
   );
@@ -224,11 +373,11 @@ export default function SprintView({ tasks, sprints, employees }: SprintViewProp
 // SUB-COMPONENTS
 // ============================================
 
-function BacklogCard({ task, employees, onAdd, onSetPoints, isPending }: { task: Task; employees: Employee[]; onAdd: () => void; onSetPoints: () => void; isPending: boolean }) {
+function BacklogCard({ task, employees, onAdd, onSetPoints, onOpen, isPending }: { task: Task; employees: Employee[]; onAdd: () => void; onSetPoints: () => void; onOpen?: () => void; isPending: boolean }) {
   const emp = employees.find((e) => e.id === task.assignee_id);
   const prioColors: Record<string, string> = { urgent: "bg-red-500", high: "bg-orange-500", normal: "bg-blue-500", low: "bg-emerald-500" };
   return (
-    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
+    <div onClick={onOpen} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group cursor-pointer">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium text-slate-700 truncate">{task.title}</p>
         <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -237,7 +386,7 @@ function BacklogCard({ task, employees, onAdd, onSetPoints, isPending }: { task:
           {emp && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">👤 {emp.full_name.split(" ").pop()}</span>}
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <button onClick={onSetPoints} className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 text-xs" title="Story Points">✏️</button>
         <button onClick={onAdd} disabled={isPending} className="p-1.5 rounded bg-emerald-500 hover:bg-emerald-600 text-white text-xs" title="Thêm vào Sprint">➕</button>
       </div>
@@ -245,12 +394,12 @@ function BacklogCard({ task, employees, onAdd, onSetPoints, isPending }: { task:
   );
 }
 
-function SprintTaskCard({ task, employees, onRemove, onSetPoints, isPending }: { task: Task; employees: Employee[]; onRemove: () => void; onSetPoints: () => void; isPending: boolean }) {
+function SprintTaskCard({ task, employees, onRemove, onSetPoints, onOpen, isPending }: { task: Task; employees: Employee[]; onRemove: () => void; onSetPoints: () => void; onOpen?: () => void; isPending: boolean }) {
   const emp = employees.find((e) => e.id === task.assignee_id);
   const statusColors: Record<string, string> = { todo: "bg-slate-400", in_progress: "bg-amber-500", review: "bg-cyan-500", blocked: "bg-red-500", done: "bg-emerald-500" };
   const statusLabel: Record<string, string> = { todo: "To do", in_progress: "Đang làm", review: "Review", blocked: "Blocked", done: "Done" };
   return (
-    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group">
+    <div onClick={onOpen} className="flex items-start gap-3 p-3 bg-slate-50 rounded-lg hover:bg-slate-100 transition-colors group cursor-pointer">
       <div className="flex-1 min-w-0">
         <p className={`text-sm font-medium truncate ${task.status === "done" ? "text-slate-400 line-through" : "text-slate-700"}`}>{task.title}</p>
         <div className="flex gap-1.5 mt-1 flex-wrap">
@@ -259,7 +408,7 @@ function SprintTaskCard({ task, employees, onRemove, onSetPoints, isPending }: {
           {emp && <span className="text-[10px] px-1.5 py-0.5 rounded bg-slate-200 text-slate-600">👤 {emp.full_name.split(" ").pop()}</span>}
         </div>
       </div>
-      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+      <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <button onClick={onSetPoints} className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 text-xs">✏️</button>
         <button onClick={onRemove} disabled={isPending} className="p-1.5 rounded bg-red-500 hover:bg-red-600 text-white text-xs" title="Xóa khỏi Sprint">←</button>
       </div>
@@ -323,9 +472,41 @@ function CreateSprintModal({ onClose, sprints }: { onClose: () => void; sprints:
   );
 }
 
-function CompleteSprintModal({ sprint, tasks, onClose }: { sprint: Sprint; tasks: Task[]; onClose: () => void }) {
+function CompleteSprintModal({ sprint, tasks, sprints, onClose }: { sprint: Sprint; tasks: Task[]; sprints: Sprint[]; onClose: () => void }) {
   const [isPending, startTransition] = useTransition();
   const metrics = calculateSprintMetrics(sprint, tasks);
+
+  const incompleteTasks = tasks.filter(
+    (t) => t.sprint_id === sprint.id && t.status !== "done" && t.status !== "cancelled"
+  );
+
+  // Sprint kế tiếp = sprint khác đang ở planning (chưa active)
+  const nextSprints = sprints.filter((s) => s.status === "planning" && s.id !== sprint.id);
+
+  // Xử lý từng task chưa xong: backlog | cancel | next:<sprintId>
+  const [dispositions, setDispositions] = useState<Record<string, string>>(
+    () => Object.fromEntries(incompleteTasks.map((t) => [t.id, "backlog"]))
+  );
+
+  // Bulk apply
+  function applyAll(value: string) {
+    setDispositions(Object.fromEntries(incompleteTasks.map((t) => [t.id, value])));
+  }
+
+  // Retrospective state
+  const [wentWell, setWentWell] = useState<string[]>([""]);
+  const [toImprove, setToImprove] = useState<string[]>([""]);
+  const [actionItems, setActionItems] = useState<string[]>([""]);
+
+  function addRow(setter: React.Dispatch<React.SetStateAction<string[]>>) {
+    setter((prev) => [...prev, ""]);
+  }
+  function updateRow(setter: React.Dispatch<React.SetStateAction<string[]>>, idx: number, value: string) {
+    setter((prev) => prev.map((v, i) => (i === idx ? value : v)));
+  }
+  function removeRow(setter: React.Dispatch<React.SetStateAction<string[]>>, idx: number) {
+    setter((prev) => prev.filter((_, i) => i !== idx));
+  }
 
   function handleComplete() {
     startTransition(async () => {
@@ -335,28 +516,122 @@ function CompleteSprintModal({ sprint, tasks, onClose }: { sprint: Sprint; tasks
       fd.set("completedPoints", String(metrics.completedPoints));
       fd.set("carryOverPoints", String(metrics.carryOverPoints));
       fd.set("completionRate", String(metrics.completionRate));
+      fd.set("dispositions", JSON.stringify(dispositions));
+      fd.set(
+        "retrospective",
+        JSON.stringify({
+          went_well: wentWell.map((s) => s.trim()).filter(Boolean),
+          to_improve: toImprove.map((s) => s.trim()).filter(Boolean),
+          action_items: actionItems.map((s) => s.trim()).filter(Boolean),
+        })
+      );
       await completeSprintAction(fd);
       onClose();
     });
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl space-y-4">
-        <h2 className="text-lg font-bold text-slate-800">⏹️ Kết thúc Sprint</h2>
-        <p className="text-sm text-slate-500">Bạn chắc chắn muốn kết thúc <strong>{sprint.name}</strong>?</p>
-        <div className="grid grid-cols-2 gap-3 text-center">
-          <div className="bg-emerald-50 rounded-lg p-3"><div className="text-xl font-bold text-emerald-600">{metrics.taskCount.completed}</div><div className="text-xs text-slate-500">Hoàn thành</div></div>
-          <div className="bg-amber-50 rounded-lg p-3"><div className="text-xl font-bold text-amber-600">{metrics.taskCount.carriedOver}</div><div className="text-xs text-slate-500">Carry Over</div></div>
-          <div className="bg-indigo-50 rounded-lg p-3"><div className="text-xl font-bold text-indigo-600">{metrics.velocity}</div><div className="text-xs text-slate-500">Velocity</div></div>
-          <div className="bg-purple-50 rounded-lg p-3"><div className="text-xl font-bold text-purple-600">{metrics.completionRate}%</div><div className="text-xs text-slate-500">Completion</div></div>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4" onClick={(e) => e.target === e.currentTarget && onClose()}>
+      <div className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh]">
+        <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between">
+          <h2 className="text-lg font-bold text-slate-800">⏹️ Kết thúc {sprint.name}</h2>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-700 text-xl leading-none">×</button>
         </div>
-        <div className="flex gap-3 justify-end pt-2">
+
+        <div className="overflow-y-auto px-6 py-4 space-y-5">
+          {/* Metrics summary */}
+          <div className="grid grid-cols-4 gap-3 text-center">
+            <div className="bg-emerald-50 rounded-lg p-3"><div className="text-xl font-bold text-emerald-600">{metrics.taskCount.completed}</div><div className="text-xs text-slate-500">Hoàn thành</div></div>
+            <div className="bg-amber-50 rounded-lg p-3"><div className="text-xl font-bold text-amber-600">{metrics.taskCount.carriedOver}</div><div className="text-xs text-slate-500">Chưa xong</div></div>
+            <div className="bg-indigo-50 rounded-lg p-3"><div className="text-xl font-bold text-indigo-600">{metrics.velocity}</div><div className="text-xs text-slate-500">Velocity</div></div>
+            <div className="bg-purple-50 rounded-lg p-3"><div className="text-xl font-bold text-purple-600">{metrics.completionRate}%</div><div className="text-xs text-slate-500">Completion</div></div>
+          </div>
+
+          {/* Disposition */}
+          {incompleteTasks.length > 0 && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <h3 className="text-sm font-semibold text-slate-700">📦 Xử lý {incompleteTasks.length} task chưa hoàn thành</h3>
+                <div className="flex gap-1 text-xs">
+                  <button type="button" onClick={() => applyAll("backlog")} className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Tất cả → Backlog</button>
+                  <button type="button" onClick={() => applyAll("cancel")} className="px-2 py-1 rounded bg-slate-100 hover:bg-slate-200">Tất cả → Cancel</button>
+                </div>
+              </div>
+              <div className="space-y-1.5 max-h-[220px] overflow-y-auto rounded-lg border border-slate-200">
+                {incompleteTasks.map((t) => (
+                  <div key={t.id} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50">
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm text-slate-700 truncate">{t.title}</div>
+                      <div className="text-[10px] text-slate-500">{t.status} · {t.story_points || 0} pts</div>
+                    </div>
+                    <select
+                      value={dispositions[t.id] ?? "backlog"}
+                      onChange={(e) => setDispositions((prev) => ({ ...prev, [t.id]: e.target.value }))}
+                      className="h-8 rounded-md border border-slate-300 bg-white px-2 text-xs"
+                    >
+                      <option value="backlog">📋 Trả về Backlog</option>
+                      <option value="cancel">❌ Cancel</option>
+                      {nextSprints.map((s) => (
+                        <option key={s.id} value={`next:${s.id}`}>➡️ {s.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              {nextSprints.length === 0 && (
+                <div className="text-[11px] text-slate-400 mt-1 italic">
+                  💡 Tạo sprint kế tiếp (status &quot;planning&quot;) trước khi kết thúc nếu muốn chuyển task sang sprint sau.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Retrospective */}
+          <div>
+            <h3 className="text-sm font-semibold text-slate-700 mb-2">📝 Retrospective</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              <RetroColumn title="✅ Đã làm tốt" color="emerald" rows={wentWell} onAdd={() => addRow(setWentWell)} onChange={(i, v) => updateRow(setWentWell, i, v)} onRemove={(i) => removeRow(setWentWell, i)} />
+              <RetroColumn title="⚠️ Cần lưu ý" color="amber" rows={toImprove} onAdd={() => addRow(setToImprove)} onChange={(i, v) => updateRow(setToImprove, i, v)} onRemove={(i) => removeRow(setToImprove, i)} />
+              <RetroColumn title="🎯 Action tiếp theo" color="indigo" rows={actionItems} onAdd={() => addRow(setActionItems)} onChange={(i, v) => updateRow(setActionItems, i, v)} onRemove={(i) => removeRow(setActionItems, i)} />
+            </div>
+          </div>
+        </div>
+
+        <div className="px-6 py-3 border-t border-slate-200 flex gap-3 justify-end">
           <button onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Hủy</button>
           <button onClick={handleComplete} disabled={isPending} className="px-5 py-2 rounded-lg text-sm text-white font-semibold bg-red-500 hover:bg-red-600 disabled:opacity-50">
-            {isPending ? "Đang xử lý..." : "⏹️ Kết thúc"}
+            {isPending ? "Đang xử lý..." : "⏹️ Kết thúc Sprint"}
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function RetroColumn({ title, color, rows, onAdd, onChange, onRemove }: { title: string; color: "emerald" | "amber" | "indigo"; rows: string[]; onAdd: () => void; onChange: (i: number, v: string) => void; onRemove: (i: number) => void }) {
+  const colorMap = {
+    emerald: "bg-emerald-50 border-emerald-200",
+    amber: "bg-amber-50 border-amber-200",
+    indigo: "bg-indigo-50 border-indigo-200",
+  };
+  return (
+    <div className={`rounded-lg border ${colorMap[color]} p-3`}>
+      <div className="text-xs font-semibold text-slate-700 mb-2">{title}</div>
+      <div className="space-y-1.5">
+        {rows.map((row, i) => (
+          <div key={i} className="flex gap-1">
+            <input
+              value={row}
+              onChange={(e) => onChange(i, e.target.value)}
+              placeholder="Ghi chú..."
+              className="flex-1 px-2 py-1 rounded border border-slate-200 bg-white text-xs"
+            />
+            {rows.length > 1 && (
+              <button type="button" onClick={() => onRemove(i)} className="text-xs text-slate-400 hover:text-red-500 px-1">×</button>
+            )}
+          </div>
+        ))}
+        <button type="button" onClick={onAdd} className="text-[11px] text-slate-500 hover:text-slate-700">+ Thêm</button>
       </div>
     </div>
   );

@@ -10,20 +10,23 @@ import { MiniCalendar } from "@/components/widgets/MiniCalendar";
 import { ActivityFeed } from "@/components/widgets/ActivityFeed";
 import { ProgressList } from "@/components/widgets/ProgressList";
 import { fetchTasks, fetchEmployees, fetchKpis, fetchDepartments } from "@/lib/queries";
-import { listSprints } from "@/lib/repositories/operations";
+import { listSprints, listAllTaskResults } from "@/lib/repositories/operations";
 import { createTaskAction } from "@/app/(app)/workspace/actions";
 import { CheckCircle2, AlertTriangle, Target, ListChecks, Zap, Wrench, Plus, ChevronDown } from "lucide-react";
+import { DeadlineCalendar } from "./DeadlineCalendar";
+import { isTaskOverdue } from "./sprint-utils";
 import { OperationsBoard } from "./OperationsBoard";
 
 export default async function OperationsPage() {
   const { t } = await tServer();
-  const [tasks, employees, kpis, departments, sprints] = await Promise.all([fetchTasks(), fetchEmployees(), fetchKpis(), fetchDepartments(), listSprints()]);
+  const [tasks, employees, kpis, departments, sprints, taskResults] = await Promise.all([fetchTasks(), fetchEmployees(), fetchKpis(), fetchDepartments(), listSprints(), listAllTaskResults()]);
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const today = new Date();
   const done = tasks.filter((t) => t.status === "done").length;
+  const inProgress = tasks.filter((t) => t.status === "in_progress").length;
   const open = tasks.filter((t) => t.status !== "done" && t.status !== "cancelled");
-  const overdue = open.filter((t) => t.due_date && new Date(t.due_date) < today);
+  const overdue = tasks.filter(isTaskOverdue);
   const urgent = tasks.filter((t) => t.priority === "urgent" || t.priority === "high").length;
   const withKpi = tasks.filter((t) => t.linked_kpi_id).length;
   const kpiLinkPct = tasks.length ? Math.round((withKpi / tasks.length) * 100) : 0;
@@ -80,21 +83,13 @@ export default async function OperationsPage() {
         helpKey="/operations"
         title={t("ops.title")}
         description={t("ops.subtitle")}
-        actions={
-          <label htmlFor="new-task-toggle" className="cursor-pointer">
-            <Button className="gap-1.5">
-              <Plus className="h-4 w-4" />
-              {t("ops.newTask")}
-            </Button>
-          </label>
-        }
       />
 
       {/* ── KPI Cards ─────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3 mb-6">
         <KpiCard label="Tổng task"    value={String(tasks.length)} accent="indigo"  icon={<ListChecks className="h-3.5 w-3.5" />} spark={[8, 10, 9, 11, 12, tasks.length]} />
         <KpiCard label="Hoàn thành"   value={String(done)}         accent="emerald" icon={<CheckCircle2 className="h-3.5 w-3.5" />} spark={[2, 3, 4, 5, 6, done]} delta={22} />
-        <KpiCard label="Đang làm"     value={String(open.length)}  accent="violet"  icon={<Zap className="h-3.5 w-3.5" />} spark={[3, 4, 5, 6, 7, open.length]} />
+        <KpiCard label="Đang làm"     value={String(inProgress)}   accent="violet"  icon={<Zap className="h-3.5 w-3.5" />} spark={[3, 4, 5, 6, 7, inProgress]} />
         <KpiCard label="Overdue"      value={String(overdue.length)} accent="red"   icon={<AlertTriangle className="h-3.5 w-3.5" />} />
         <KpiCard label="Urgent / High" value={String(urgent)}       accent="amber"  icon={<Zap className="h-3.5 w-3.5" />} />
         <KpiCard label="On-time rate" value={`${onTime}%`}          accent="cyan"   icon={<Target className="h-3.5 w-3.5" />} spark={[85, 87, 88, 90, 91, onTime]} />
@@ -179,6 +174,7 @@ export default async function OperationsPage() {
           employees={employees}
           kpis={kpis}
           departments={departments}
+          taskResults={taskResults}
           kpiLinkPct={kpiLinkPct}
         />
       </div>
@@ -259,7 +255,7 @@ export default async function OperationsPage() {
             <CardTitle className="text-sm">Lịch deadline tháng</CardTitle>
           </CardHeader>
           <CardContent>
-            <MiniCalendar year={currentYear} month={currentMonth} today={currentDay} highlights={highlightDays} />
+            <DeadlineCalendar year={currentYear} month={currentMonth} today={currentDay} tasks={tasks} employees={employees} />
           </CardContent>
         </Card>
 

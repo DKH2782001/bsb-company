@@ -97,6 +97,21 @@ export function getBacklogTasks(tasks: Task[]) {
 /** Fibonacci sequence for story points */
 export const FIBONACCI_POINTS = [1, 2, 3, 5, 8, 13, 21] as const;
 
+/** Trả về YYYY-MM-DD theo local date của hôm nay */
+export function todayLocalISO(): string {
+  const now = new Date();
+  const y = now.getFullYear();
+  const m = String(now.getMonth() + 1).padStart(2, "0");
+  const d = String(now.getDate()).padStart(2, "0");
+  return `${y}-${m}-${d}`;
+}
+
+/** Task quá hạn: due_date < hôm nay (local) và status không phải done/cancelled */
+export function isTaskOverdue(task: Task): boolean {
+  if (!task.due_date || task.status === "done" || task.status === "cancelled") return false;
+  return task.due_date.slice(0, 10) < todayLocalISO();
+}
+
 /** Format days left text */
 export function formatDaysLeft(daysLeft: number): string {
   if (daysLeft > 0) return `Còn ${daysLeft} ngày`;

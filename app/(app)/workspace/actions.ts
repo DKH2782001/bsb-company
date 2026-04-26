@@ -20,6 +20,9 @@ import {
   createSprint,
   updateSprintStatus,
   assignTaskToSprint,
+  addTaskResult,
+  deleteTaskResult,
+  getTask,
 } from "@/lib/repositories/operations";
 import {
   createAccountingEntry,
@@ -660,9 +663,28 @@ export async function startSprintAction(formData: FormData) {
 }
 
 export async function completeSprintAction(formData: FormData) {
-  const retrospective = formData.get("retrospective");
+  const sprintId = String(formData.get("sprintId") ?? "");
+  if (!sprintId) return;
+
+  // Xử lý task chưa hoàn thành: { taskId: "backlog" | "cancel" | "next:<sprintId>" }
+  const dispositionsRaw = formData.get("dispositions");
+  if (dispositionsRaw) {
+    const dispositions = JSON.parse(String(dispositionsRaw)) as Record<string, string>;
+    for (const [taskId, action] of Object.entries(dispositions)) {
+      if (action === "backlog") {
+        await assignTaskToSprint({ taskId, sprintId: null });
+      } else if (action === "cancel") {
+        await updateTaskStatus({ taskId, status: "cancelled" });
+      } else if (action.startsWith("next:")) {
+        const nextSprintId = action.slice(5);
+        if (nextSprintId) await assignTaskToSprint({ taskId, sprintId: nextSprintId });
+      }
+    }
+  }
+
+  const retrospectiveRaw = formData.get("retrospective");
   await updateSprintStatus({
-    sprintId: String(formData.get("sprintId") ?? ""),
+    sprintId,
     status: "completed",
     metrics: {
       velocity: Number(formData.get("velocity") ?? 0),
@@ -670,8 +692,33 @@ export async function completeSprintAction(formData: FormData) {
       carryOverPoints: Number(formData.get("carryOverPoints") ?? 0),
       completionRate: Number(formData.get("completionRate") ?? 0),
     },
-    retrospective: retrospective ? JSON.parse(String(retrospective)) : undefined,
+    retrospective: retrospectiveRaw ? JSON.parse(String(retrospectiveRaw)) : undefined,
   });
+  revalidatePath("/operations");
+}
+
+export async function addTaskResultAction(formData: FormData) {
+  const taskId = String(formData.get("taskId") ?? "");
+  const type = String(formData.get("type") ?? "link") as "link" | "file";
+  const url = String(formData.get("url") ?? "");
+  const label = String(formData.get("label") ?? "") || (type === "link" ? "Link kết quả" : "File kết quả");
+  const note = String(formData.get("note") ?? "") || null;
+  if (!taskId || !url) return;
+  await addTaskResult({ taskId, type, url, label, note });
+
+  // Có kết quả nộp → chuyển task sang trạng thái Review để lead duyệt
+  // (chỉ áp dụng nếu task đang todo / in_progress / blocked, không ép task done/cancelled)
+  const task = await getTask(taskId);
+  if (task && (task.status === "todo" || task.status === "in_progress" || task.status === "blocked")) {
+    await updateTaskStatus({ taskId, status: "review" });
+  }
+  revalidatePath("/operations");
+}
+
+export async function deleteTaskResultAction(formData: FormData) {
+  const id = String(formData.get("id") ?? "");
+  if (!id) return;
+  await deleteTaskResult(id);
   revalidatePath("/operations");
 }
 

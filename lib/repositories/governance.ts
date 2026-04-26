@@ -55,16 +55,98 @@ export async function listReportSchedules() {
   );
 }
 
+export type AuditLogFilter = {
+  actorIds?: string[];
+  actions?: string[];
+  entities?: string[];
+  from?: string | null;     // ISO datetime
+  to?: string | null;       // ISO datetime
+  search?: string;          // tìm trong action, entity, entity_id
+  page?: number;            // 1-based
+  pageSize?: number;
+};
+
+const DEFAULT_PAGE_SIZE = 50;
+
+/** Cũ — giữ tương thích (không filter, top-100). */
 export async function listAuditLogs() {
-  return withDemoFallback(demo.demoAuditLogs, async (db) => {
-    const { data, error } = await db
-      .from("audit_logs")
-      .select("*")
-      .order("created_at", { ascending: false })
-      .limit(100);
+  const { rows } = await queryAuditLogs({});
+  return rows;
+}
+
+/** Có filter + pagination + total count. Dùng cho trang /audit. */
+export async function queryAuditLogs(filter: AuditLogFilter): Promise<{ rows: import("@/types/domain").AuditLog[]; total: number }> {
+  const page = Math.max(1, filter.page ?? 1);
+  const pageSize = Math.min(200, Math.max(10, filter.pageSize ?? DEFAULT_PAGE_SIZE));
+  const offset = (page - 1) * pageSize;
+
+  // Demo mode → filter trên array trong bộ nhớ
+  return withDemoFallback(filterDemoLogs(demo.demoAuditLogs, filter, offset, pageSize), async (db) => {
+    let q = db.from("audit_logs").select("*", { count: "exact" }).order("created_at", { ascending: false });
+
+    if (filter.actorIds?.length) q = q.in("actor", filter.actorIds);
+    if (filter.actions?.length) q = q.in("action", filter.actions);
+    if (filter.entities?.length) q = q.in("entity", filter.entities);
+    if (filter.from) q = q.gte("created_at", filter.from);
+    if (filter.to) q = q.lte("created_at", filter.to);
+    if (filter.search) {
+      // ilike trên 3 cột
+      const s = `%${filter.search}%`;
+      q = q.or(`action.ilike.${s},entity.ilike.${s},entity_id.ilike.${s}`);
+    }
+
+    q = q.range(offset, offset + pageSize - 1);
+
+    const { data, error, count } = await q;
     if (error) throw error;
-    return data ?? [];
+    return {
+      rows: (data ?? []) as import("@/types/domain").AuditLog[],
+      total: count ?? data?.length ?? 0,
+    };
   });
+}
+
+function filterDemoLogs(
+  list: import("@/types/domain").AuditLog[],
+  filter: AuditLogFilter,
+  offset: number,
+  pageSize: number,
+): { rows: import("@/types/domain").AuditLog[]; total: number } {
+  let rows = list.slice();
+  if (filter.actorIds?.length) rows = rows.filter((r) => r.actor && filter.actorIds!.includes(r.actor));
+  if (filter.actions?.length) rows = rows.filter((r) => filter.actions!.includes(r.action));
+  if (filter.entities?.length) rows = rows.filter((r) => r.entity && filter.entities!.includes(r.entity));
+  if (filter.from) rows = rows.filter((r) => r.created_at >= filter.from!);
+  if (filter.to) rows = rows.filter((r) => r.created_at <= filter.to!);
+  if (filter.search) {
+    const q = filter.search.toLowerCase();
+    rows = rows.filter((r) =>
+      r.action.toLowerCase().includes(q) ||
+      (r.entity ?? "").toLowerCase().includes(q) ||
+      (r.entity_id ?? "").toLowerCase().includes(q),
+    );
+  }
+  rows.sort((a, b) => b.created_at.localeCompare(a.created_at));
+  return { rows: rows.slice(offset, offset + pageSize), total: rows.length };
+}
+
+/** Trả ra danh sách distinct action + entity để populate dropdown filter (demo + supabase đều an toàn). */
+export async function listAuditFacets(): Promise<{ actions: string[]; entities: string[] }> {
+  return withDemoFallback(
+    {
+      actions: Array.from(new Set(demo.demoAuditLogs.map((r) => r.action))).sort(),
+      entities: Array.from(new Set(demo.demoAuditLogs.map((r) => r.entity).filter((e): e is string => !!e))).sort(),
+    },
+    async (db) => {
+      // Lấy mẫu 1000 bản ghi gần nhất rồi distinct ở client — đủ cho dropdown
+      const { data } = await db.from("audit_logs").select("action, entity").order("created_at", { ascending: false }).limit(1000);
+      const list = (data ?? []) as { action: string; entity: string | null }[];
+      return {
+        actions: Array.from(new Set(list.map((r) => r.action))).sort(),
+        entities: Array.from(new Set(list.map((r) => r.entity).filter((e): e is string => !!e))).sort(),
+      };
+    },
+  );
 }
 
 export async function resolveAlert(alertId: string) {

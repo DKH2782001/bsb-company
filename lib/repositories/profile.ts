@@ -167,6 +167,37 @@ export async function updateEmployeeProfile(input: { fullName: string; phone: st
   });
 }
 
+export async function updateEmployeeAvatar(input: { avatarUrl: string; storagePath?: string | null }) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!user || !context.companyId || !input.avatarUrl) return;
+
+  const db = await getDbClientOrThrow();
+  const { data } = await db
+    .from("employees")
+    .select("*")
+    .eq("auth_user_id", user.id)
+    .maybeSingle();
+  const current = (data as { id: string; avatar_url?: string | null } | null) ?? null;
+  if (!current) return;
+
+  const employeesTable = db.from("employees") as unknown as {
+    update: (values: { avatar_url: string }) => {
+      eq: (column: string, value: string) => Promise<unknown>;
+    };
+  };
+
+  await employeesTable.update({ avatar_url: input.avatarUrl }).eq("id", current.id);
+
+  await writeAuditLog({
+    action: "profile.avatar.update",
+    entity: "employees",
+    entityId: current.id,
+    before: { avatar_url: current.avatar_url ?? null },
+    after: { avatar_url: input.avatarUrl, storage_path: input.storagePath ?? null },
+  });
+}
+
 export async function saveUserPreferences(input: UserPreferenceInput) {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);

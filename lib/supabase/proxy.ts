@@ -36,7 +36,8 @@ export async function updateSession(request: NextRequest) {
   const isAuthPage =
     pathname.startsWith("/login") ||
     pathname.startsWith("/signup") ||
-    pathname.startsWith("/reset-password");
+    pathname.startsWith("/reset-password") ||
+    pathname.startsWith("/update-password");
   const isPublic = isAuthPage || pathname === "/" || pathname.startsWith("/api/health");
 
   if (!user && !isPublic) {
@@ -46,7 +47,7 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.redirect(redirect);
   }
 
-  if (user && isAuthPage) {
+  if (user && isAuthPage && !pathname.startsWith("/update-password")) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/dashboard";
     return NextResponse.redirect(redirect);

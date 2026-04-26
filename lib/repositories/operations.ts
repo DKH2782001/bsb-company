@@ -1,6 +1,16 @@
 import * as demo from "@/lib/queries/demo";
 import { writeAuditLog } from "@/lib/repositories/audit";
 import { getAuthenticatedUser, getDbClientOrThrow, getUserContext, withDemoFallback } from "@/lib/repositories/shared";
+import { hasSupabaseEnv } from "@/lib/env";
+import type { Task, Sprint, TaskResult } from "@/types/domain";
+
+function shouldUseDemoStore() {
+  return !hasSupabaseEnv();
+}
+
+function genId(prefix: string) {
+  return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
+}
 
 export async function listTasks() {
   return withDemoFallback(demo.demoTasks, async (db) => {
@@ -8,6 +18,21 @@ export async function listTasks() {
     if (error) throw error;
     return data ?? [];
   });
+}
+
+export async function getTask(taskId: string): Promise<Task | null> {
+  if (shouldUseDemoStore()) {
+    return demo.demoTasks.find((t) => t.id === taskId) ?? null;
+  }
+  try {
+    const db = await getDbClientOrThrow();
+    const { data } = await (db.from("tasks") as unknown as {
+      select: (s: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Task | null }> } };
+    }).select("*").eq("id", taskId).maybeSingle();
+    return data;
+  } catch {
+    return demo.demoTasks.find((t) => t.id === taskId) ?? null;
+  }
 }
 
 export async function createTask(input: {
@@ -34,6 +59,31 @@ export async function createTask(input: {
     task_type: input.taskType || "growth",
     status: "todo",
   };
+
+  if (shouldUseDemoStore()) {
+    const newTask: Task = {
+      id: genId("t"),
+      company_id: context.companyId,
+      title: input.title,
+      description: null,
+      assignee_id: input.assigneeId || null,
+      reviewer_id: null,
+      department_id: input.departmentId || null,
+      project_id: null,
+      linked_kpi_id: input.linkedKpiId || null,
+      priority: (input.priority || "normal") as Task["priority"],
+      task_type: (input.taskType || "growth") as Task["task_type"],
+      status: "todo",
+      due_date: input.dueDate || null,
+      estimated_hours: null,
+      actual_hours: null,
+      sprint_id: null,
+      story_points: null,
+      parent_task_id: null,
+    };
+    demo.demoTasks.push(newTask);
+    return;
+  }
 
   try {
     const db = await getDbClientOrThrow();
@@ -98,6 +148,12 @@ export async function updateTaskStatus(input: {
   const context = await getUserContext(user);
   if (!context.companyId) return;
 
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoTasks.findIndex((t) => t.id === input.taskId);
+    if (idx >= 0) demo.demoTasks[idx] = { ...demo.demoTasks[idx], status: input.status };
+    return;
+  }
+
   try {
     const db = await getDbClientOrThrow();
     const tasksTable = db.from("tasks") as unknown as {
@@ -153,6 +209,14 @@ export async function updateTask(input: {
 
   if (Object.keys(payload).length === 0) return;
 
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoTasks.findIndex((t) => t.id === input.taskId);
+    if (idx >= 0) {
+      demo.demoTasks[idx] = { ...demo.demoTasks[idx], ...(payload as Partial<Task>) };
+    }
+    return;
+  }
+
   try {
     const db = await getDbClientOrThrow();
     const tasksTable = db.from("tasks") as unknown as {
@@ -177,6 +241,16 @@ export async function bulkUpdateTaskStatus(input: {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
   if (!context.companyId || input.taskIds.length === 0) return;
+
+  if (shouldUseDemoStore()) {
+    const ids = new Set(input.taskIds);
+    for (let i = 0; i < demo.demoTasks.length; i++) {
+      if (ids.has(demo.demoTasks[i].id)) {
+        demo.demoTasks[i] = { ...demo.demoTasks[i], status: input.status };
+      }
+    }
+    return;
+  }
 
   try {
     const db = await getDbClientOrThrow();
@@ -221,6 +295,28 @@ export async function createSprint(input: {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
   if (!context.companyId) return null;
+
+  if (shouldUseDemoStore()) {
+    const newSprint: Sprint = {
+      id: genId("sp"),
+      company_id: context.companyId,
+      name: input.name,
+      goal: input.goal || null,
+      start_date: input.startDate,
+      end_date: input.endDate,
+      status: "planning",
+      capacity: input.capacity || 0,
+      velocity: null,
+      completed_points: null,
+      carry_over_points: null,
+      completion_rate: null,
+      created_at: new Date().toISOString(),
+      completed_at: null,
+      retrospective: null,
+    };
+    demo.demoSprints.push(newSprint);
+    return newSprint;
+  }
 
   try {
     const db = await getDbClientOrThrow();
@@ -285,6 +381,14 @@ export async function updateSprintStatus(input: {
     }
   }
 
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoSprints.findIndex((s) => s.id === input.sprintId);
+    if (idx >= 0) {
+      demo.demoSprints[idx] = { ...demo.demoSprints[idx], ...(payload as Partial<Sprint>) };
+    }
+    return;
+  }
+
   try {
     const db = await getDbClientOrThrow();
     const table = db.from("sprints") as unknown as {
@@ -310,6 +414,12 @@ export async function assignTaskToSprint(input: {
   const context = await getUserContext(user);
   if (!context.companyId) return;
 
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoTasks.findIndex((t) => t.id === input.taskId);
+    if (idx >= 0) demo.demoTasks[idx] = { ...demo.demoTasks[idx], sprint_id: input.sprintId };
+    return;
+  }
+
   try {
     const db = await getDbClientOrThrow();
     const tasksTable = db.from("tasks") as unknown as {
@@ -324,5 +434,107 @@ export async function assignTaskToSprint(input: {
     });
   } catch (err) {
     console.warn("[assignTaskToSprint] DB write failed (demo mode?):", err);
+  }
+}
+
+// ============================================
+// TASK RESULTS
+// ============================================
+
+export async function listTaskResults(taskId: string): Promise<TaskResult[]> {
+  if (shouldUseDemoStore()) {
+    return demo.demoTaskResults.filter((r) => r.task_id === taskId);
+  }
+  try {
+    const db = await getDbClientOrThrow();
+    const { data } = await (db.from("task_results") as unknown as {
+      select: (s: string) => { eq: (c: string, v: string) => { order: (c: string, opt: { ascending: boolean }) => Promise<{ data: TaskResult[] }> } };
+    }).select("*").eq("task_id", taskId).order("created_at", { ascending: false });
+    return (data as TaskResult[]) ?? [];
+  } catch {
+    return demo.demoTaskResults.filter((r) => r.task_id === taskId);
+  }
+}
+
+export async function listAllTaskResults(): Promise<TaskResult[]> {
+  if (shouldUseDemoStore()) return demo.demoTaskResults.slice();
+  try {
+    const db = await getDbClientOrThrow();
+    const { data } = await (db.from("task_results") as unknown as {
+      select: (s: string) => Promise<{ data: TaskResult[] }>;
+    }).select("*");
+    return (data as TaskResult[]) ?? [];
+  } catch {
+    return demo.demoTaskResults.slice();
+  }
+}
+
+export async function addTaskResult(input: {
+  taskId: string;
+  type: "link" | "file";
+  url: string;
+  label: string;
+  note?: string | null;
+}): Promise<TaskResult | null> {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId) return null;
+
+  const newResult: TaskResult = {
+    id: genId("tr"),
+    task_id: input.taskId,
+    type: input.type,
+    url: input.url,
+    label: input.label,
+    note: input.note ?? null,
+    created_at: new Date().toISOString(),
+    created_by: context.employeeId,
+  };
+
+  if (shouldUseDemoStore()) {
+    demo.demoTaskResults.push(newResult);
+    return newResult;
+  }
+
+  try {
+    const db = await getDbClientOrThrow();
+    const table = db.from("task_results") as unknown as {
+      insert: (v: Record<string, unknown>) => { select: (s: string) => { single: () => Promise<{ data: TaskResult | null }> } };
+    };
+    const { data } = await table.insert({
+      task_id: input.taskId,
+      type: input.type,
+      url: input.url,
+      label: input.label,
+      note: input.note ?? null,
+      created_by: context.employeeId,
+    }).select("*").single();
+    await writeAuditLog({
+      action: "task_result.add",
+      entity: "task_results",
+      entityId: data?.id ?? null,
+      after: input,
+    });
+    return data;
+  } catch (err) {
+    console.warn("[addTaskResult] DB write failed (demo mode?):", err);
+    demo.demoTaskResults.push(newResult);
+    return newResult;
+  }
+}
+
+export async function deleteTaskResult(id: string) {
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoTaskResults.findIndex((r) => r.id === id);
+    if (idx >= 0) demo.demoTaskResults.splice(idx, 1);
+    return;
+  }
+  try {
+    const db = await getDbClientOrThrow();
+    await (db.from("task_results") as unknown as {
+      delete: () => { eq: (c: string, v: string) => Promise<unknown> };
+    }).delete().eq("id", id);
+  } catch (err) {
+    console.warn("[deleteTaskResult] DB delete failed:", err);
   }
 }

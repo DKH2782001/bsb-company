@@ -9,9 +9,9 @@ import { isDemoMode } from "@/lib/env";
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ next?: string; registered?: string; error?: string }>;
+  searchParams: Promise<{ next?: string; registered?: string; passwordUpdated?: string; error?: string }>;
 }) {
-  const { next, registered, error } = await searchParams;
+  const { next, registered, passwordUpdated, error } = await searchParams;
   const { t } = await tServer();
   const demoMode = isDemoMode();
 
@@ -25,6 +25,11 @@ export default async function LoginPage({
       {registered && (
         <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
           {t("auth.registered")}
+        </div>
+      )}
+      {passwordUpdated && (
+        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+          Password updated. Please sign in again.
         </div>
       )}
       {error && (

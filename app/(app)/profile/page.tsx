@@ -1,9 +1,13 @@
 import { logout } from "@/app/(auth)/actions";
-import { updatePreferencesAction, updateProfileAction } from "./actions";
+import { signOutOtherSessionsAction, updatePreferencesAction, updateProfileAction } from "./actions";
 import { fetchProfileData } from "@/lib/queries";
+import { isDemoMode } from "@/lib/env";
+import { hasSupabaseEnv } from "@/lib/supabase/server";
 import { formatDateVN } from "@/lib/utils";
 import { PageHeader } from "@/components/layout/PageHeader";
-import { EntityAvatar } from "@/components/shared/EntityAvatar";
+import { ProfileAvatarUploader } from "@/components/profile/ProfileAvatarUploader";
+import { ProfileDocumentUploads } from "@/components/profile/ProfileDocumentUploads";
+import { ProfileMfaPanel } from "@/components/profile/ProfileMfaPanel";
 import { SettingsListRow } from "@/components/shared/SettingsListRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -43,6 +47,7 @@ const roleTone: Record<string, "info" | "warning" | "success" | "outline"> = {
 
 export default async function ProfilePage() {
   const data = await fetchProfileData();
+  const canUseSupabaseAuth = hasSupabaseEnv() && !isDemoMode();
   const authUser = data.authUser;
   const employee = data.employee;
   const preference = data.preferences;
@@ -114,12 +119,10 @@ export default async function ProfilePage() {
             </div>
 
             <form action={updateProfileAction} className="grid gap-5 lg:grid-cols-[160px_1fr]">
-              <div className="flex flex-col items-center gap-4">
-                <EntityAvatar name={employee?.full_name ?? "Người dùng demo"} size="lg" />
-                <Button variant="outline" className="w-full">
-                  Chỉnh sửa hồ sơ
-                </Button>
-              </div>
+              <ProfileAvatarUploader
+                name={employee?.full_name ?? "Người dùng demo"}
+                initialAvatarUrl={employee?.avatar_url}
+              />
 
               <div className="grid gap-3">
                 <ProfileField label="Họ tên" name="fullName" defaultValue={employee?.full_name ?? (authUser?.user_metadata?.full_name as string) ?? ""} />
@@ -157,11 +160,14 @@ export default async function ProfilePage() {
                   hint="Cập nhật 20/05/2024"
                   action="Cập nhật"
                 />
-                <SettingsListRow
-                  icon={<Shield className="h-4 w-4" />}
-                  title="Xác thực 2 lớp (2FA)"
-                  hint="Đã kích hoạt"
-                  status="success"
+                <ProfileMfaPanel
+                  hasSupabaseEnv={canUseSupabaseAuth}
+                  initialEnabled={Boolean(
+                    securitySettings &&
+                      typeof securitySettings === "object" &&
+                      "two_factor" in securitySettings &&
+                      securitySettings.two_factor,
+                  )}
                 />
                 <SettingsListRow
                   icon={<CheckCircle2 className="h-4 w-4" />}
@@ -237,7 +243,11 @@ export default async function ProfilePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle>Thiết bị đăng nhập</CardTitle>
-                <span className="text-xs font-medium text-[var(--brand-600)]">Xem tất cả</span>
+                <form action={signOutOtherSessionsAction}>
+                  <Button type="submit" variant="ghost" size="sm" disabled={!canUseSupabaseAuth}>
+                    Đăng xuất phiên khác
+                  </Button>
+                </form>
               </div>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -264,6 +274,18 @@ export default async function ProfilePage() {
           </Card>
         </div>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle>Kho tài liệu cá nhân</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <ProfileDocumentUploads />
+          <div className="mt-3 text-xs text-[var(--text-soft)]">
+            File riêng tư được upload vào Supabase Storage; link private chỉ được ký tạm thời trong 60 phút.
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="grid gap-4 xl:grid-cols-[1.25fr_1.05fr_0.8fr]">
         <Card>

@@ -1,0 +1,282 @@
+
+> company-os@0.1.0 dev
+> next dev --hostname 127.0.0.1 --port 3000
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://127.0.0.1:3000
+- Network:       http://127.0.0.1:3000
+✓ Ready in 516ms
+Creating turbopack project { dir: 'C:\\Users\\Tran Phong\\bsb-company', testMode: true }
+- Experiments (use with caution):
+  · optimizePackageImports
+
+ GET /operations 200 in 7.0s (next.js: 875ms, proxy.ts: 199ms, application-code: 5.9s)
+ GET /operations 200 in 411ms (next.js: 93ms, proxy.ts: 41ms, application-code: 277ms)
+ GET /operations 200 in 596ms (next.js: 80ms, proxy.ts: 55ms, application-code: 461ms)
+ GET /operations 200 in 426ms (next.js: 4ms, proxy.ts: 26ms, application-code: 396ms)
+ GET /operations 200 in 369ms (next.js: 67ms, proxy.ts: 32ms, application-code: 270ms)
+ GET /operations 200 in 371ms (next.js: 13ms, proxy.ts: 32ms, application-code: 326ms)
+ GET /operations 200 in 405ms (next.js: 86ms, proxy.ts: 33ms, application-code: 286ms)
+ GET /operations 200 in 405ms (next.js: 104ms, proxy.ts: 33ms, application-code: 267ms)
+ GET /operations 200 in 496ms (next.js: 4ms, proxy.ts: 4ms, application-code: 488ms)
+ GET /operations 200 in 491ms (next.js: 10ms, proxy.ts: 4ms, application-code: 477ms)
+ GET /operations 200 in 546ms (next.js: 27ms, proxy.ts: 70ms, application-code: 448ms)
+ GET /operations 200 in 516ms (next.js: 47ms, proxy.ts: 52ms, application-code: 417ms)
+ GET /operations 200 in 487ms (next.js: 131ms, proxy.ts: 27ms, application-code: 329ms)
+ GET /operations 200 in 502ms (next.js: 91ms, proxy.ts: 38ms, application-code: 374ms)
+ GET /operations 200 in 217ms (next.js: 7ms, proxy.ts: 7ms, application-code: 203ms)
+ GET /operations 200 in 102ms (next.js: 10ms, proxy.ts: 9ms, application-code: 82ms)
+ POST /operations 200 in 20ms (next.js: 3ms, proxy.ts: 5ms, application-code: 12ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 1ms app/(app)/_actions/notifications.ts
+ POST /operations 200 in 18ms (next.js: 4ms, proxy.ts: 4ms, application-code: 10ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ GET / 307 in 180ms (next.js: 56ms, proxy.ts: 8ms, application-code: 116ms)
+ GET /dashboard 200 in 2.8s (next.js: 1096ms, proxy.ts: 6ms, application-code: 1730ms)
+ POST /dashboard 200 in 96ms (next.js: 55ms, proxy.ts: 31ms, application-code: 11ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ GET /operations 200 in 238ms (next.js: 24ms, proxy.ts: 7ms, application-code: 207ms)
+ POST /dashboard 200 in 249ms (next.js: 76ms, proxy.ts: 6ms, application-code: 166ms)
+  └─ ƒ markNotificationReadAction("n1") in 1ms app/(app)/_actions/notifications.ts
+ GET /operations 200 in 63ms (next.js: 5ms, proxy.ts: 5ms, application-code: 54ms)
+ POST /operations 200 in 60ms (next.js: 3ms, proxy.ts: 4ms, application-code: 54ms)
+  └─ ƒ completeSprintAction({}) in 1ms app/(app)/workspace/actions.ts
+ GET /kpi 200 in 2.1s (next.js: 753ms, proxy.ts: 3ms, application-code: 1297ms)
+ GET /kpi 200 in 605ms (next.js: 63ms, proxy.ts: 31ms, application-code: 510ms)
+ GET /kpi 200 in 463ms (next.js: 4ms, proxy.ts: 7ms, application-code: 452ms)
+ GET /kpi 200 in 453ms (next.js: 64ms, proxy.ts: 36ms, application-code: 354ms)
+ GET /kpi 200 in 456ms (next.js: 38ms, proxy.ts: 36ms, application-code: 382ms)
+ GET /kpi 200 in 458ms (next.js: 10ms, proxy.ts: 37ms, application-code: 411ms)
+ GET /kpi 200 in 454ms (next.js: 90ms, proxy.ts: 35ms, application-code: 329ms)
+ GET /kpi 200 in 401ms (next.js: 6ms, proxy.ts: 8ms, application-code: 387ms)
+ GET /kpi 200 in 291ms (next.js: 10ms, proxy.ts: 6ms, application-code: 275ms)
+ GET /kpi 200 in 247ms (next.js: 8ms, proxy.ts: 40ms, application-code: 199ms)
+ GET /kpi 200 in 246ms (next.js: 33ms, proxy.ts: 40ms, application-code: 173ms)
+ GET /kpi 200 in 247ms (next.js: 63ms, proxy.ts: 40ms, application-code: 145ms)
+ GET /departments 200 in 1622ms (next.js: 682ms, proxy.ts: 28ms, application-code: 912ms)
+ GET /org 200 in 3.8s (next.js: 1156ms, proxy.ts: 3ms, application-code: 2.7s)
+ GET /kpi 200 in 1873ms (next.js: 60ms, proxy.ts: 4ms, application-code: 1809ms)
+ GET /kpi 200 in 1726ms (next.js: 66ms, proxy.ts: 1284ms, application-code: 376ms)
+ GET /kpi 200 in 366ms (next.js: 9ms, proxy.ts: 9ms, application-code: 348ms)
+ GET /kpi 200 in 393ms (next.js: 37ms, proxy.ts: 10ms, application-code: 347ms)
+ GET /kpi 200 in 398ms (next.js: 7ms, proxy.ts: 110ms, application-code: 280ms)
+ GET /kpi 200 in 426ms (next.js: 5ms, proxy.ts: 74ms, application-code: 347ms)
+ GET /kpi 200 in 455ms (next.js: 6ms, proxy.ts: 5ms, application-code: 445ms)
+ GET /kpi 200 in 467ms (next.js: 7ms, proxy.ts: 6ms, application-code: 455ms)
+ GET /kpi 200 in 465ms (next.js: 8ms, proxy.ts: 70ms, application-code: 387ms)
+ GET /kpi 200 in 405ms (next.js: 65ms, proxy.ts: 8ms, application-code: 332ms)
+ GET /kpi 200 in 435ms (next.js: 42ms, proxy.ts: 73ms, application-code: 320ms)
+ GET /kpi 200 in 447ms (next.js: 6ms, proxy.ts: 75ms, application-code: 367ms)
+ GET /kpi 200 in 441ms (next.js: 5ms, proxy.ts: 5ms, application-code: 431ms)
+ GET /kpi 200 in 433ms (next.js: 10ms, proxy.ts: 6ms, application-code: 417ms)
+ GET /kpi 200 in 430ms (next.js: 37ms, proxy.ts: 37ms, application-code: 356ms)
+ GET /kpi 200 in 399ms (next.js: 34ms, proxy.ts: 66ms, application-code: 299ms)
+ GET /kpi 200 in 367ms (next.js: 37ms, proxy.ts: 37ms, application-code: 293ms)
+ GET /kpi 200 in 409ms (next.js: 8ms, proxy.ts: 75ms, application-code: 325ms)
+ GET /departments 200 in 182ms (next.js: 45ms, proxy.ts: 32ms, application-code: 105ms)
+ GET /kpi 200 in 262ms (next.js: 4ms, proxy.ts: 5ms, application-code: 254ms)
+ GET /org 200 in 162ms (next.js: 30ms, proxy.ts: 65ms, application-code: 67ms)
+ GET /kpi 200 in 205ms (next.js: 6ms, proxy.ts: 6ms, application-code: 194ms)
+ GET /people 200 in 1614ms (next.js: 1226ms, proxy.ts: 4ms, application-code: 384ms)
+ POST /people 200 in 179ms (next.js: 97ms, proxy.ts: 37ms, application-code: 44ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ GET /people 200 in 483ms (next.js: 71ms, proxy.ts: 37ms, application-code: 376ms)
+ GET /people 200 in 348ms (next.js: 3ms, proxy.ts: 8ms, application-code: 337ms)
+ GET /people 200 in 328ms (next.js: 9ms, proxy.ts: 26ms, application-code: 293ms)
+ GET /people 200 in 327ms (next.js: 60ms, proxy.ts: 27ms, application-code: 240ms)
+ GET /people 200 in 329ms (next.js: 33ms, proxy.ts: 26ms, application-code: 270ms)
+ GET /people 200 in 244ms (next.js: 4ms, proxy.ts: 5ms, application-code: 234ms)
+ GET /people 200 in 189ms (next.js: 4ms, proxy.ts: 6ms, application-code: 180ms)
+ GET /people 200 in 108ms (next.js: 4ms, proxy.ts: 50ms, application-code: 53ms)
+ GET /people 200 in 120ms (next.js: 9ms, proxy.ts: 5ms, application-code: 106ms)
+ POST /people 200 in 16ms (next.js: 3ms, proxy.ts: 3ms, application-code: 10ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 22ms (next.js: 8ms, proxy.ts: 5ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 4ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 24ms (next.js: 5ms, proxy.ts: 6ms, application-code: 13ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 2ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 18ms (next.js: 4ms, proxy.ts: 4ms, application-code: 10ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 4ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 4ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 11ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 18ms (next.js: 6ms, proxy.ts: 4ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 4ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 16ms (next.js: 4ms, proxy.ts: 4ms, application-code: 9ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 4ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 17ms (next.js: 4ms, proxy.ts: 4ms, application-code: 9ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 4ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 4ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 18ms (next.js: 3ms, proxy.ts: 4ms, application-code: 10ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 3ms, proxy.ts: 5ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 3ms, proxy.ts: 4ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 3ms, proxy.ts: 4ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 4ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ GET /people 200 in 660ms (next.js: 124ms, proxy.ts: 39ms, application-code: 497ms)
+ GET /people 200 in 472ms (next.js: 5ms, proxy.ts: 7ms, application-code: 461ms)
+ GET /people 200 in 434ms (next.js: 11ms, proxy.ts: 13ms, application-code: 411ms)
+ GET /people 200 in 434ms (next.js: 93ms, proxy.ts: 13ms, application-code: 327ms)
+ GET /people 200 in 434ms (next.js: 119ms, proxy.ts: 14ms, application-code: 301ms)
+ GET /people 200 in 438ms (next.js: 41ms, proxy.ts: 13ms, application-code: 384ms)
+ GET /people 200 in 446ms (next.js: 6ms, proxy.ts: 8ms, application-code: 432ms)
+ GET /people 200 in 395ms (next.js: 19ms, proxy.ts: 6ms, application-code: 370ms)
+ GET /people 200 in 364ms (next.js: 52ms, proxy.ts: 47ms, application-code: 265ms)
+ GET /people 200 in 368ms (next.js: 11ms, proxy.ts: 47ms, application-code: 310ms)
+ GET /people 200 in 366ms (next.js: 104ms, proxy.ts: 47ms, application-code: 214ms)
+ GET /people 200 in 371ms (next.js: 82ms, proxy.ts: 47ms, application-code: 242ms)
+ GET /people 200 in 352ms (next.js: 5ms, proxy.ts: 5ms, application-code: 342ms)
+ GET /people 200 in 309ms (next.js: 15ms, proxy.ts: 6ms, application-code: 288ms)
+ GET /people 200 in 352ms (next.js: 11ms, proxy.ts: 62ms, application-code: 279ms)
+ GET /people 200 in 322ms (next.js: 31ms, proxy.ts: 32ms, application-code: 259ms)
+ GET /people 200 in 321ms (next.js: 62ms, proxy.ts: 30ms, application-code: 229ms)
+ GET /people 200 in 304ms (next.js: 136ms, proxy.ts: 11ms, application-code: 158ms)
+ GET /people 200 in 375ms (next.js: 6ms, proxy.ts: 5ms, application-code: 364ms)
+ GET /people 200 in 325ms (next.js: 19ms, proxy.ts: 6ms, application-code: 300ms)
+ GET /people 200 in 413ms (next.js: 16ms, proxy.ts: 67ms, application-code: 330ms)
+ GET /people 200 in 413ms (next.js: 43ms, proxy.ts: 67ms, application-code: 303ms)
+ GET /people 200 in 415ms (next.js: 69ms, proxy.ts: 68ms, application-code: 278ms)
+ GET /people 200 in 380ms (next.js: 119ms, proxy.ts: 33ms, application-code: 228ms)
+ GET /people 200 in 395ms (next.js: 7ms, proxy.ts: 5ms, application-code: 382ms)
+ GET /people 200 in 307ms (next.js: 17ms, proxy.ts: 13ms, application-code: 276ms)
+ GET /people 200 in 370ms (next.js: 11ms, proxy.ts: 59ms, application-code: 300ms)
+ GET /people 200 in 367ms (next.js: 35ms, proxy.ts: 59ms, application-code: 273ms)
+ GET /people 200 in 340ms (next.js: 79ms, proxy.ts: 29ms, application-code: 232ms)
+ GET /people 200 in 344ms (next.js: 124ms, proxy.ts: 28ms, application-code: 192ms)
+ GET /people 200 in 405ms (next.js: 9ms, proxy.ts: 6ms, application-code: 390ms)
+ GET /people 200 in 369ms (next.js: 15ms, proxy.ts: 49ms, application-code: 305ms)
+ GET /people 200 in 395ms (next.js: 36ms, proxy.ts: 66ms, application-code: 292ms)
+ GET /people 200 in 397ms (next.js: 11ms, proxy.ts: 66ms, application-code: 320ms)
+ GET /people 200 in 368ms (next.js: 127ms, proxy.ts: 32ms, application-code: 209ms)
+ GET /people 200 in 393ms (next.js: 106ms, proxy.ts: 82ms, application-code: 205ms)
+ GET /people 200 in 547ms (next.js: 6ms, proxy.ts: 5ms, application-code: 536ms)
+ GET /people 200 in 526ms (next.js: 22ms, proxy.ts: 56ms, application-code: 448ms)
+ GET /people 200 in 503ms (next.js: 88ms, proxy.ts: 79ms, application-code: 336ms)
+ GET /people 200 in 526ms (next.js: 119ms, proxy.ts: 79ms, application-code: 328ms)
+ GET /people 200 in 535ms (next.js: 88ms, proxy.ts: 153ms, application-code: 295ms)
+ GET /people 200 in 459ms (next.js: 32ms, proxy.ts: 181ms, application-code: 247ms)
+ GET /people 200 in 406ms (next.js: 11ms, proxy.ts: 9ms, application-code: 387ms)
+ GET /people 200 in 399ms (next.js: 22ms, proxy.ts: 69ms, application-code: 307ms)
+ GET /people 200 in 337ms (next.js: 70ms, proxy.ts: 18ms, application-code: 250ms)
+ GET /people 200 in 383ms (next.js: 73ms, proxy.ts: 73ms, application-code: 237ms)
+ GET /people 200 in 341ms (next.js: 87ms, proxy.ts: 70ms, application-code: 184ms)
+ GET /people 200 in 352ms (next.js: 23ms, proxy.ts: 90ms, application-code: 240ms)
+ GET /people 200 in 456ms (next.js: 11ms, proxy.ts: 6ms, application-code: 439ms)
+ GET /people 200 in 454ms (next.js: 33ms, proxy.ts: 38ms, application-code: 383ms)
+ GET /people 200 in 401ms (next.js: 53ms, proxy.ts: 66ms, application-code: 282ms)
+ GET /people 200 in 421ms (next.js: 97ms, proxy.ts: 99ms, application-code: 225ms)
+ GET /people 200 in 358ms (next.js: 112ms, proxy.ts: 68ms, application-code: 177ms)
+ GET /people 200 in 372ms (next.js: 25ms, proxy.ts: 114ms, application-code: 232ms)
+ GET /people 200 in 342ms (next.js: 8ms, proxy.ts: 7ms, application-code: 327ms)
+ GET /people 200 in 340ms (next.js: 35ms, proxy.ts: 32ms, application-code: 274ms)
+ GET /people 200 in 314ms (next.js: 59ms, proxy.ts: 31ms, application-code: 225ms)
+ GET /people 200 in 290ms (next.js: 56ms, proxy.ts: 59ms, application-code: 176ms)
+ GET /people 200 in 293ms (next.js: 66ms, proxy.ts: 55ms, application-code: 172ms)
+ GET /people 200 in 347ms (next.js: 5ms, proxy.ts: 51ms, application-code: 291ms)
+ GET /people 200 in 361ms (next.js: 11ms, proxy.ts: 7ms, application-code: 344ms)
+ GET /people 200 in 359ms (next.js: 34ms, proxy.ts: 39ms, application-code: 287ms)
+ GET /people 200 in 329ms (next.js: 53ms, proxy.ts: 33ms, application-code: 244ms)
+ GET /people 200 in 328ms (next.js: 76ms, proxy.ts: 31ms, application-code: 221ms)
+ GET /people 200 in 323ms (next.js: 62ms, proxy.ts: 82ms, application-code: 179ms)
+ GET /people 200 in 322ms (next.js: 6ms, proxy.ts: 32ms, application-code: 284ms)
+ GET /people 200 in 338ms (next.js: 11ms, proxy.ts: 8ms, application-code: 319ms)
+ GET /people 200 in 332ms (next.js: 34ms, proxy.ts: 36ms, application-code: 262ms)
+ GET /people 200 in 331ms (next.js: 56ms, proxy.ts: 55ms, application-code: 221ms)
+ GET /people 200 in 305ms (next.js: 81ms, proxy.ts: 32ms, application-code: 193ms)
+ GET /people 200 in 277ms (next.js: 83ms, proxy.ts: 78ms, application-code: 117ms)
+ POST /people 200 in 29ms (next.js: 6ms, proxy.ts: 8ms, application-code: 16ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ GET /people 200 in 92ms (next.js: 4ms, proxy.ts: 5ms, application-code: 83ms)
+✓ Compiled in 37ms
+ GET /people 200 in 528ms (next.js: 136ms, proxy.ts: 36ms, application-code: 356ms)
+ GET /people 200 in 331ms (next.js: 4ms, proxy.ts: 5ms, application-code: 322ms)
+ GET /people 200 in 297ms (next.js: 35ms, proxy.ts: 11ms, application-code: 250ms)
+ GET /people 200 in 299ms (next.js: 9ms, proxy.ts: 11ms, application-code: 278ms)
+ GET /people 200 in 297ms (next.js: 89ms, proxy.ts: 12ms, application-code: 196ms)
+ GET /people 200 in 299ms (next.js: 65ms, proxy.ts: 12ms, application-code: 222ms)
+ GET /people 200 in 358ms (next.js: 4ms, proxy.ts: 5ms, application-code: 349ms)
+ GET /people 200 in 306ms (next.js: 16ms, proxy.ts: 5ms, application-code: 285ms)
+ GET /people 200 in 336ms (next.js: 12ms, proxy.ts: 71ms, application-code: 254ms)
+ GET /people 200 in 335ms (next.js: 41ms, proxy.ts: 71ms, application-code: 224ms)
+ GET /people 200 in 301ms (next.js: 63ms, proxy.ts: 39ms, application-code: 200ms)
+ GET /people 200 in 299ms (next.js: 110ms, proxy.ts: 39ms, application-code: 150ms)
+ GET /people 200 in 55ms (next.js: 5ms, proxy.ts: 4ms, application-code: 46ms)
+ POST /people 200 in 30ms (next.js: 4ms, proxy.ts: 5ms, application-code: 21ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 18ms (next.js: 4ms, proxy.ts: 6ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 4ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 16ms (next.js: 4ms, proxy.ts: 4ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 19ms (next.js: 5ms, proxy.ts: 4ms, application-code: 10ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 4ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 16ms (next.js: 3ms, proxy.ts: 5ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 18ms (next.js: 4ms, proxy.ts: 5ms, application-code: 9ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 17ms (next.js: 5ms, proxy.ts: 4ms, application-code: 8ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 14ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 3ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /api/storage/upload 503 in 1124ms (next.js: 1096ms, proxy.ts: 5ms, application-code: 23ms)
+ GET /profile 200 in 2.5s (next.js: 1655ms, proxy.ts: 3ms, application-code: 835ms)
+ POST /people 200 in 12ms (next.js: 3ms, proxy.ts: 4ms, application-code: 6ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 15ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 19ms (next.js: 4ms, proxy.ts: 4ms, application-code: 12ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts
+ POST /people 200 in 13ms (next.js: 3ms, proxy.ts: 4ms, application-code: 7ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 0ms app/(app)/_actions/notifications.ts

@@ -9,8 +9,21 @@ import { DataTable, type Column } from "@/components/tables/DataTable";
 import { useToast } from "@/components/ui/toast";
 import { AccountingEntryFormDialog } from "./AccountingEntryFormDialog";
 import { deleteAccountingEntryAction } from "@/app/(app)/workspace/actions";
+import { bulkImportAccountingEntriesAction } from "@/app/(app)/_actions/bulk-import";
+import { ImportExportButtons } from "@/components/import-export/ImportExportButtons";
+import type { ImportColumn } from "@/components/import-export/ImportDialog";
 import { formatVND } from "@/lib/utils";
 import type { AccountingEntry, Department } from "@/types/domain";
+
+const ENTRY_IMPORT_COLUMNS: ImportColumn[] = [
+  { header: "accountCode", key: "accountCode", required: true,  hint: "Mã tài khoản (vd 511, 642)", sample: "511" },
+  { header: "debit",       key: "debit",                          hint: "Số tiền vế Nợ", sample: 0 },
+  { header: "credit",      key: "credit",                         hint: "Số tiền vế Có", sample: 0 },
+  { header: "departmentId",key: "departmentId",                   hint: "ID phòng ban", sample: "" },
+  { header: "note",        key: "note",                           hint: "Ghi chú", sample: "" },
+  { header: "entryDate",   key: "entryDate",   required: true,   hint: "YYYY-MM-DD", sample: "2026-04-26",
+    validate: (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v)) ? null : "entryDate phải là YYYY-MM-DD") },
+];
 
 type Row = AccountingEntry & { dept_name: string };
 
@@ -65,7 +78,23 @@ export function AccountingEntriesManager({
 
   return (
     <>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex flex-wrap justify-between items-center gap-2">
+        <ImportExportButtons
+          entityLabel="bút toán"
+          filenameBase="accounting_entries"
+          importColumns={ENTRY_IMPORT_COLUMNS}
+          onImport={bulkImportAccountingEntriesAction}
+          exportRows={rows}
+          exportColumns={[
+            { key: "id", header: "id" },
+            { key: "entry_date", header: "Ngày" },
+            { key: "account_code", header: "Mã TK" },
+            { key: "debit", header: "Nợ" },
+            { key: "credit", header: "Có" },
+            { key: "dept_name", header: "Phòng ban" },
+            { key: "note", header: "Ghi chú" },
+          ]}
+        />
         <Button type="button" onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" />
           Ghi bút toán

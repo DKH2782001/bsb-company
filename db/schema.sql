@@ -783,9 +783,15 @@ create table if not exists audit_logs (
   entity_id uuid,
   before jsonb,
   after jsonb,
+  ip_address inet,
+  user_agent text,
+  request_id text,
   created_at timestamptz not null default now()
 );
 create index if not exists audit_logs_entity_idx on audit_logs(entity, entity_id);
+create index if not exists audit_logs_actor_created_idx on audit_logs(company_id, actor, created_at desc);
+create index if not exists audit_logs_action_created_idx on audit_logs(company_id, action, created_at desc);
+create index if not exists audit_logs_company_created_idx on audit_logs(company_id, created_at desc);
 
 -- =============================================================================
 -- SETTINGS / INTEGRATIONS

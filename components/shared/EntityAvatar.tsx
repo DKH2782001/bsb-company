@@ -1,13 +1,16 @@
+/* eslint-disable @next/next/no-img-element */
 import { cn } from "@/lib/utils";
 
 export function EntityAvatar({
   name,
   size = "md",
   tone = "indigo",
+  imageUrl = null,
 }: {
   name: string;
   size?: "sm" | "md" | "lg";
   tone?: "indigo" | "violet" | "emerald" | "amber";
+  imageUrl?: string | null;
 }) {
   const initials = name
     .split(" ")
@@ -27,6 +30,19 @@ export function EntityAvatar({
         : tone === "amber"
           ? "from-amber-400 to-orange-500"
           : "from-[#6D5EF7] to-[#415BFF]";
+
+  if (imageUrl) {
+    return (
+      <img
+        src={imageUrl}
+        alt={name}
+        className={cn(
+          "inline-flex rounded-[28px] object-cover shadow-[0_10px_30px_rgba(92,90,255,0.18)]",
+          sizeClass,
+        )}
+      />
+    );
+  }
 
   return (
     <div

@@ -119,6 +119,17 @@ export type Task = {
   parent_task_id: string | null;
 };
 
+export type TaskResult = {
+  id: string;
+  task_id: string;
+  type: "link" | "file";
+  url: string;
+  label: string;
+  note: string | null;
+  created_at: string;
+  created_by: string | null;
+};
+
 export type Sprint = {
   id: string;
   company_id: string;
@@ -251,6 +262,17 @@ export type SopDocument = {
   published: boolean;
 };
 
+export type Notification = {
+  id: string;
+  company_id: string;
+  auth_user_id: string;
+  title: string;
+  body: string | null;
+  link: string | null;
+  read_at: string | null;
+  created_at: string;
+};
+
 export type AuditLog = {
   id: string;
   company_id: string;
@@ -260,5 +282,8 @@ export type AuditLog = {
   entity_id: string | null;
   before: Record<string, unknown> | null;
   after: Record<string, unknown> | null;
+  ip_address: string | null;
+  user_agent: string | null;
+  request_id: string | null;
   created_at: string;
 };

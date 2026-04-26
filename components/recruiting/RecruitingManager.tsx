@@ -10,7 +10,18 @@ import { DataTable, type Column } from "@/components/tables/DataTable";
 import { useToast } from "@/components/ui/toast";
 import { RequisitionFormDialog } from "./RequisitionFormDialog";
 import { deleteRequisitionAction } from "@/app/(app)/workspace/actions";
+import { bulkImportRequisitionsAction } from "@/app/(app)/_actions/bulk-import";
+import { ImportExportButtons } from "@/components/import-export/ImportExportButtons";
+import type { ImportColumn } from "@/components/import-export/ImportDialog";
 import type { Department, JobRequisition } from "@/types/domain";
+
+const REQ_IMPORT_COLUMNS: ImportColumn[] = [
+  { header: "title",        key: "title",        required: true, hint: "Tên vị trí cần tuyển", sample: "Senior Sales" },
+  { header: "departmentId", key: "departmentId",                  hint: "ID phòng ban", sample: "" },
+  { header: "headcount",    key: "headcount",    required: true, hint: "Số lượng tuyển", sample: 2,
+    validate: (v) => (Number(v) >= 1 ? null : "headcount phải >= 1") },
+  { header: "reason",       key: "reason",                        hint: "Lý do tuyển", sample: "Mở rộng team" },
+];
 
 type Row = JobRequisition & { dept_name: string };
 
@@ -73,7 +84,23 @@ export function RecruitingManager({ rows, departments }: { rows: Row[]; departme
 
   return (
     <>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex flex-wrap justify-between items-center gap-2">
+        <ImportExportButtons
+          entityLabel="requisition"
+          filenameBase="requisitions"
+          importColumns={REQ_IMPORT_COLUMNS}
+          onImport={bulkImportRequisitionsAction}
+          exportRows={rows}
+          exportColumns={[
+            { key: "id", header: "id" },
+            { key: "title", header: "Vị trí" },
+            { key: "department_id", header: "ID phòng ban" },
+            { key: "headcount", header: "Headcount" },
+            { key: "reason", header: "Lý do" },
+            { key: "status", header: "Trạng thái" },
+            { key: "opened_at", header: "Mở từ" },
+          ]}
+        />
         <Button type="button" onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" />
           Mở requisition

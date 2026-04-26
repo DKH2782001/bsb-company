@@ -11,8 +11,27 @@ import { DataTable, type Column } from "@/components/tables/DataTable";
 import { useToast } from "@/components/ui/toast";
 import { EmployeeFormDialog } from "./EmployeeFormDialog";
 import { deleteEmployeeAction } from "@/app/(app)/workspace/actions";
+import { bulkImportEmployeesAction } from "@/app/(app)/_actions/bulk-import";
+import { ImportExportButtons } from "@/components/import-export/ImportExportButtons";
+import type { ImportColumn } from "@/components/import-export/ImportDialog";
 import { formatCompactVND } from "@/lib/utils";
 import type { Department, Employee } from "@/types/domain";
+
+const EMPLOYEE_IMPORT_COLUMNS: ImportColumn[] = [
+  { header: "fullName",      key: "fullName",      required: true,  hint: "Họ tên đầy đủ", sample: "Nguyễn Văn A" },
+  { header: "email",         key: "email",         required: true,  hint: "Email duy nhất",  sample: "vana@company.vn",
+    validate: (v) => (typeof v === "string" && /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v) ? null : "Email không hợp lệ") },
+  { header: "departmentId",  key: "departmentId",                  hint: "ID phòng ban (xem trang Departments)", sample: "" },
+  { header: "managerId",     key: "managerId",                     hint: "ID quản lý",                              sample: "" },
+  { header: "baseSalary",    key: "baseSalary",    required: true,  hint: "Lương cơ bản (VND)", sample: 15_000_000,
+    validate: (v) => (Number(v) > 0 ? null : "Lương phải > 0") },
+  { header: "employmentType",key: "employmentType",                 hint: "fulltime / parttime / contract", sample: "fulltime",
+    validate: (v) => {
+      if (!v) return null;
+      const ok = ["fulltime", "parttime", "contract"].includes(String(v));
+      return ok ? null : "employmentType phải là fulltime/parttime/contract";
+    } },
+];
 
 type Row = Employee & { dept_name: string; manager_name: string; kpi_count: number };
 
@@ -108,7 +127,24 @@ export function PeopleManager({
 
   return (
     <>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex flex-wrap justify-between items-center gap-2">
+        <ImportExportButtons
+          entityLabel="nhân sự"
+          filenameBase="employees"
+          importColumns={EMPLOYEE_IMPORT_COLUMNS}
+          onImport={bulkImportEmployeesAction}
+          exportRows={rows}
+          exportColumns={[
+            { key: "id", header: "id" },
+            { key: "full_name", header: "Họ tên" },
+            { key: "email", header: "Email" },
+            { key: "dept_name", header: "Phòng ban" },
+            { key: "manager_name", header: "Quản lý" },
+            { key: "base_salary", header: "Lương cơ bản" },
+            { key: "employment_type", header: "Loại hợp đồng" },
+            { key: "status", header: "Trạng thái" },
+          ]}
+        />
         <Button type="button" onClick={() => setCreating(true)}>
           <UserPlus className="h-4 w-4" />
           Thêm nhân sự

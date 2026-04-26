@@ -4,8 +4,8 @@ import { useState, useTransition, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { Task, Employee, Kpi, Department } from "@/types/domain";
-import { updateTaskAction } from "@/app/(app)/workspace/actions";
+import type { Task, Employee, Kpi, Department, TaskResult } from "@/types/domain";
+import { updateTaskAction, updateTaskStatusAction, addTaskResultAction, deleteTaskResultAction } from "@/app/(app)/workspace/actions";
 import {
   X,
   Save,
@@ -25,6 +25,7 @@ type Props = {
   employees: Employee[];
   kpis: Kpi[];
   departments: Department[];
+  results?: TaskResult[];
   onClose: () => void;
 };
 
@@ -51,8 +52,9 @@ const TYPE_OPTIONS = [
   { value: "urgent", label: "Urgent", emoji: "⚡" },
 ];
 
-export function TaskDetailModal({ task, employees, kpis, departments, onClose }: Props) {
+export function TaskDetailModal({ task, employees, kpis, departments, results = [], onClose }: Props) {
   const [isPending, startTransition] = useTransition();
+  const [now] = useState(() => Date.now());
   const [dirty, setDirty] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
@@ -72,9 +74,9 @@ export function TaskDetailModal({ task, employees, kpis, departments, onClose }:
 
   // Overdue calc
   const isOverdue =
-    dueDate && status !== "done" && status !== "cancelled" && new Date(dueDate) < new Date();
+    dueDate && status !== "done" && status !== "cancelled" && new Date(dueDate).getTime() < now;
   const daysOverdue = isOverdue
-    ? Math.ceil((Date.now() - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24))
+    ? Math.ceil((now - new Date(dueDate).getTime()) / (1000 * 60 * 60 * 24))
     : 0;
 
   // Assignee lookup
@@ -109,6 +111,18 @@ export function TaskDetailModal({ task, employees, kpis, departments, onClose }:
       if (estimatedHours) fd.set("estimatedHours", estimatedHours);
       if (actualHours) fd.set("actualHours", actualHours);
       await updateTaskAction(fd);
+      onClose();
+    });
+  }
+
+  function handleReviewDecision(approve: boolean) {
+    const next = approve ? "done" : "in_progress";
+    setStatus(next);
+    startTransition(async () => {
+      const fd = new FormData();
+      fd.set("taskId", task.id);
+      fd.set("status", next);
+      await updateTaskStatusAction(fd);
       onClose();
     });
   }
@@ -170,6 +184,37 @@ export function TaskDetailModal({ task, employees, kpis, departments, onClose }:
 
         {/* ── Body ────────────────────────────────────────────────────────── */}
         <div className="px-6 py-4 space-y-5">
+          {/* Review approval banner */}
+          {status === "review" && (
+            <div className="rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50 to-indigo-50 p-4">
+              <div className="flex items-start gap-3">
+                <div className="text-2xl">👀</div>
+                <div className="flex-1">
+                  <div className="text-sm font-semibold text-violet-800">Task đang chờ duyệt</div>
+                  <div className="text-xs text-violet-600 mt-0.5">
+                    Nhân sự đã nộp kết quả ({results.length} mục). Lead xem lại và phê duyệt.
+                  </div>
+                  <div className="flex gap-2 mt-3">
+                    <button
+                      onClick={() => handleReviewDecision(true)}
+                      disabled={isPending}
+                      className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm disabled:opacity-50"
+                    >
+                      ✅ Duyệt → Hoàn thành
+                    </button>
+                    <button
+                      onClick={() => handleReviewDecision(false)}
+                      disabled={isPending}
+                      className="px-4 py-1.5 rounded-lg text-sm font-semibold bg-white border border-red-300 text-red-600 hover:bg-red-50 disabled:opacity-50"
+                    >
+                      ↩️ Không duyệt → Đang làm
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div>
             <label className={labelClass}>
@@ -355,6 +400,9 @@ export function TaskDetailModal({ task, employees, kpis, departments, onClose }:
             </div>
           )}
 
+          {/* Task Results */}
+          <TaskResultsSection taskId={task.id} results={results} />
+
           {/* Meta info */}
           <div className="flex items-center gap-3 text-[10px] text-zinc-400">
             <span>Task ID: {task.id.slice(0, 8)}…</span>
@@ -379,6 +427,112 @@ export function TaskDetailModal({ task, employees, kpis, departments, onClose }:
             {isPending ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TaskResultsSection({ taskId, results }: { taskId: string; results: TaskResult[] }) {
+  const [pending, startTr] = useTransition();
+  const [mode, setMode] = useState<"link" | "file">("link");
+  const [url, setUrl] = useState("");
+  const [label, setLabel] = useState("");
+  const [note, setNote] = useState("");
+  const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function reset() {
+    setUrl(""); setLabel(""); setNote(""); setFileName("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
+  function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setFileName(f.name);
+    if (!label) setLabel(f.name);
+    const reader = new FileReader();
+    reader.onload = () => setUrl(String(reader.result));
+    reader.readAsDataURL(f);
+  }
+
+  function handleAdd() {
+    if (!url) return;
+    startTr(async () => {
+      const fd = new FormData();
+      fd.set("taskId", taskId);
+      fd.set("type", mode);
+      fd.set("url", url);
+      fd.set("label", label || (mode === "link" ? "Link kết quả" : fileName || "File kết quả"));
+      fd.set("note", note);
+      await addTaskResultAction(fd);
+      reset();
+    });
+  }
+
+  function handleDelete(id: string) {
+    startTr(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      await deleteTaskResultAction(fd);
+    });
+  }
+
+  return (
+    <div className="bg-zinc-50 rounded-lg p-3 border border-zinc-100 space-y-3">
+      <div className="flex items-center gap-2">
+        <FileText className="h-3.5 w-3.5 text-zinc-500" />
+        <span className="text-xs font-semibold text-zinc-700 uppercase">Kết quả ({results.length})</span>
+      </div>
+
+      {/* List existing */}
+      {results.length > 0 && (
+        <ul className="space-y-1.5">
+          {results.map((r) => (
+            <li key={r.id} className="flex items-start gap-2 bg-white border border-zinc-200 rounded-lg px-2.5 py-2">
+              <span className="text-base">{r.type === "link" ? "🔗" : "📎"}</span>
+              <div className="flex-1 min-w-0">
+                <a href={r.url} target="_blank" rel="noreferrer" className="text-xs font-medium text-indigo-600 hover:underline truncate block">
+                  {r.label || (r.type === "link" ? r.url : "File")}
+                </a>
+                {r.note && <div className="text-[10px] text-zinc-500 mt-0.5">{r.note}</div>}
+                <div className="text-[10px] text-zinc-400">{new Date(r.created_at).toLocaleString("vi-VN")}</div>
+              </div>
+              <button onClick={() => handleDelete(r.id)} disabled={pending} className="text-zinc-400 hover:text-red-500 text-xs">×</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {/* Add new */}
+      <div className="border-t border-zinc-200 pt-3 space-y-2">
+        <div className="flex gap-1">
+          <button onClick={() => setMode("link")} className={`px-2.5 py-1 rounded-md text-xs font-medium ${mode === "link" ? "bg-indigo-600 text-white" : "bg-white border border-zinc-200 text-zinc-600"}`}>🔗 Link</button>
+          <button onClick={() => setMode("file")} className={`px-2.5 py-1 rounded-md text-xs font-medium ${mode === "file" ? "bg-indigo-600 text-white" : "bg-white border border-zinc-200 text-zinc-600"}`}>📎 File</button>
+        </div>
+
+        {mode === "link" ? (
+          <Input placeholder="https://..." value={url} onChange={(e) => setUrl(e.target.value)} className="h-9 text-sm" />
+        ) : (
+          <input
+            ref={fileInputRef}
+            type="file"
+            onChange={handleFile}
+            className="block w-full text-xs file:mr-2 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-indigo-50 file:text-indigo-700 file:text-xs hover:file:bg-indigo-100"
+          />
+        )}
+
+        <Input placeholder="Nhãn (tuỳ chọn)" value={label} onChange={(e) => setLabel(e.target.value)} className="h-9 text-sm" />
+        <Input placeholder="Ghi chú (tuỳ chọn)" value={note} onChange={(e) => setNote(e.target.value)} className="h-9 text-sm" />
+
+        <Button onClick={handleAdd} disabled={!url || pending} className="w-full h-8 text-xs">
+          {pending ? "Đang lưu..." : "+ Thêm kết quả"}
+        </Button>
+        {mode === "file" && (
+          <div className="text-[10px] text-zinc-400">
+            File được lưu inline (data URL) trong demo. Production cần Supabase Storage.
+          </div>
+        )}
       </div>
     </div>
   );

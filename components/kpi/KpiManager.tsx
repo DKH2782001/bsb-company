@@ -12,7 +12,26 @@ import { useToast } from "@/components/ui/toast";
 import { KpiStatusBadge } from "@/components/kpi/KpiStatusBadge";
 import { KpiFormDialog } from "./KpiFormDialog";
 import { deleteKpiAction } from "@/app/(app)/workspace/actions";
+import { bulkImportKpisAction } from "@/app/(app)/_actions/bulk-import";
+import { ImportExportButtons } from "@/components/import-export/ImportExportButtons";
+import type { ImportColumn } from "@/components/import-export/ImportDialog";
 import type { Department, Employee, Kpi } from "@/types/domain";
+
+const KPI_IMPORT_COLUMNS: ImportColumn[] = [
+  { header: "name",              key: "name",              required: true,  hint: "Tên KPI", sample: "Doanh thu Q2" },
+  { header: "code",              key: "code",                                hint: "Mã KPI ngắn",                    sample: "REV_Q2" },
+  { header: "level",             key: "level",             required: true,  hint: "company / department / team / employee", sample: "department",
+    validate: (v) => (["company", "department", "team", "employee"].includes(String(v)) ? null : "level không hợp lệ") },
+  { header: "unit",              key: "unit",              required: true,  hint: "Đơn vị (vd VND, %, đơn)", sample: "VND" },
+  { header: "targetFrequency",   key: "targetFrequency",   required: true,  hint: "daily / weekly / monthly / quarterly / yearly", sample: "monthly",
+    validate: (v) => (["daily", "weekly", "monthly", "quarterly", "yearly"].includes(String(v)) ? null : "targetFrequency không hợp lệ") },
+  { header: "ownerDepartmentId", key: "ownerDepartmentId",                  hint: "ID phòng ban sở hữu", sample: "" },
+  { header: "ownerEmployeeId",   key: "ownerEmployeeId",                    hint: "ID nhân sự sở hữu", sample: "" },
+  { header: "parentKpiId",       key: "parentKpiId",                        hint: "ID KPI cha (nếu có)", sample: "" },
+  { header: "targetValue",       key: "targetValue",       required: true,  hint: "Mục tiêu", sample: 5_000_000_000,
+    validate: (v) => (Number(v) >= 0 ? null : "targetValue phải >= 0") },
+  { header: "period",            key: "period",            required: true,  hint: "YYYY-MM hoặc YYYY-Q1", sample: "2026-04" },
+];
 
 type Row = Kpi & {
   status: "green" | "yellow" | "red" | "na";
@@ -102,7 +121,27 @@ export function KpiManager({
 
   return (
     <>
-      <div className="mb-3 flex justify-end">
+      <div className="mb-3 flex flex-wrap justify-between items-center gap-2">
+        <ImportExportButtons
+          entityLabel="KPI"
+          filenameBase="kpis"
+          importColumns={KPI_IMPORT_COLUMNS}
+          onImport={bulkImportKpisAction}
+          exportRows={rows}
+          exportColumns={[
+            { key: "id", header: "id" },
+            { key: "name", header: "Tên KPI" },
+            { key: "code", header: "Mã" },
+            { key: "level", header: "Cấp" },
+            { key: "unit", header: "Đơn vị" },
+            { key: "target_frequency", header: "Tần suất" },
+            { key: "target", header: "Mục tiêu" },
+            { key: "completion", header: "% Hoàn thành" },
+            { key: "status", header: "Trạng thái" },
+            { key: "weight", header: "Trọng số" },
+            { key: "active", header: "Active" },
+          ]}
+        />
         <Button type="button" onClick={() => setCreating(true)}>
           <Plus className="h-4 w-4" />
           Tạo KPI

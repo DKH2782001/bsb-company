@@ -1,19 +1,29 @@
 "use client";
 
-import { Bell, Search, Calendar, ChevronDown, HelpCircle } from "lucide-react";
+import { Search, Calendar, ChevronDown, HelpCircle } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { LocaleSwitcher } from "./LocaleSwitcher";
+import { NotificationBell } from "./NotificationBell";
 import { t as rawT, type Locale } from "@/lib/i18n/dict";
+import type { Notification } from "@/types/domain";
 
 export function Topbar({
   userEmail,
   locale = "vi",
   roleLabel = "CEO",
+  notifications = [],
+  unreadCount = 0,
+  authUserId = null,
+  hasSupabase = false,
 }: {
   userEmail?: string | null;
   locale?: Locale;
   roleLabel?: string;
+  notifications?: Notification[];
+  unreadCount?: number;
+  authUserId?: string | null;
+  hasSupabase?: boolean;
 }) {
   const initials = (userEmail ?? "U").slice(0, 1).toUpperCase();
   const t = (k: Parameters<typeof rawT>[1]) => rawT(locale, k);
@@ -43,10 +53,12 @@ export function Topbar({
 
       <LocaleSwitcher locale={locale} />
 
-      <button className="relative rounded-2xl p-3 text-[var(--text-soft)] hover:bg-[var(--surface-alt)]">
-        <Bell className="h-[18px] w-[18px]" />
-        <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />
-      </button>
+      <NotificationBell
+        initialItems={notifications}
+        initialUnread={unreadCount}
+        authUserId={authUserId}
+        hasSupabase={hasSupabase}
+      />
 
       <div className="flex items-center gap-2">
         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-[#6D5EF7] to-[#415BFF] text-[12px] font-semibold text-white shadow-[0_10px_25px_rgba(88,72,246,0.22)]">

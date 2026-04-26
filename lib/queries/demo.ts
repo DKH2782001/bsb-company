@@ -8,7 +8,9 @@ import type {
   KpiActual,
   KpiTarget,
   Task,
+  TaskResult,
   Sprint,
+  Notification,
   PayrollEntry,
   Project,
   AccountingEntry,
@@ -191,6 +193,8 @@ export const demoTasks: Task[] = [
   mkTask("t12", "Chuẩn hóa SOP CSKH", "e7", "d004", null, "done", "normal", "maintenance", "2026-04-15"),
 ];
 
+export const demoTaskResults: TaskResult[] = [];
+
 export const demoSprints: Sprint[] = [
   {
     id: "sp1",
@@ -285,11 +289,19 @@ export const demoSops: SopDocument[] = [
   { id: "sop4", company_id: DEMO_COMPANY_ID, department_id: "d005", title: "Policy chấm công", body: "Chấm công qua app, sai sót ghi chú.", version: 4, published: true },
 ];
 
+export const DEMO_AUTH_USER_ID = "00000000-0000-0000-0000-000000000001";
+
+export const demoNotifications: Notification[] = [
+  { id: "n1", company_id: DEMO_COMPANY_ID, auth_user_id: DEMO_AUTH_USER_ID, title: "Task mới được giao", body: "Lý Hoa K đã giao bạn task 'Đăng 15 bài content TikTok'", link: "/operations", read_at: null, created_at: "2026-04-26T08:30:00Z" },
+  { id: "n2", company_id: DEMO_COMPANY_ID, auth_user_id: DEMO_AUTH_USER_ID, title: "Sprint 1 đã bắt đầu", body: "Sprint 1 - Tháng 4/2026 đã chính thức bắt đầu, hạn cuối 28/04", link: "/operations", read_at: null, created_at: "2026-04-25T07:00:00Z" },
+  { id: "n3", company_id: DEMO_COMPANY_ID, auth_user_id: DEMO_AUTH_USER_ID, title: "Task đã được duyệt", body: "Trần Minh A đã duyệt task 'Tổng hợp báo cáo tài chính Q1'", link: "/operations", read_at: "2026-04-24T10:00:00Z", created_at: "2026-04-24T09:30:00Z" },
+];
+
 export const demoAuditLogs: AuditLog[] = [
-  { id: "au1", company_id: DEMO_COMPANY_ID, actor: "e1", action: "kpi.update_target", entity: "kpi", entity_id: "k1", before: { target_value: 4_800_000_000 }, after: { target_value: 5_000_000_000 }, created_at: "2026-04-01T08:30:00Z" },
-  { id: "au2", company_id: DEMO_COMPANY_ID, actor: "e2", action: "employee.create", entity: "employee", entity_id: "e14", before: null, after: { full_name: "Đinh Hà O" }, created_at: "2026-03-15T10:00:00Z" },
-  { id: "au3", company_id: DEMO_COMPANY_ID, actor: "e3", action: "payroll.override", entity: "payroll_entries", entity_id: "pe8", before: { bonus_total: 3_000_000 }, after: { bonus_total: 5_000_000 }, created_at: "2026-04-22T14:00:00Z" },
-  { id: "au4", company_id: DEMO_COMPANY_ID, actor: "e1", action: "kpi.formula_update", entity: "kpi_formulas", entity_id: "k1", before: null, after: { formula_type: "composite" }, created_at: "2026-04-20T16:00:00Z" },
+  { id: "au1", company_id: DEMO_COMPANY_ID, actor: "e1", action: "kpi.update_target", entity: "kpi", entity_id: "k1", before: { target_value: 4_800_000_000 }, after: { target_value: 5_000_000_000 }, ip_address: "203.113.10.2", user_agent: "Mozilla/5.0 (Macintosh) Chrome/124", request_id: null, created_at: "2026-04-01T08:30:00Z" },
+  { id: "au2", company_id: DEMO_COMPANY_ID, actor: "e2", action: "employee.create", entity: "employee", entity_id: "e14", before: null, after: { full_name: "Đinh Hà O" }, ip_address: "203.113.10.2", user_agent: "Mozilla/5.0 (Windows) Chrome/124", request_id: null, created_at: "2026-03-15T10:00:00Z" },
+  { id: "au3", company_id: DEMO_COMPANY_ID, actor: "e3", action: "payroll.override", entity: "payroll_entries", entity_id: "pe8", before: { bonus_total: 3_000_000 }, after: { bonus_total: 5_000_000 }, ip_address: "171.241.20.5", user_agent: "Mozilla/5.0 (iPhone) Safari/17", request_id: null, created_at: "2026-04-22T14:00:00Z" },
+  { id: "au4", company_id: DEMO_COMPANY_ID, actor: "e1", action: "kpi.formula_update", entity: "kpi_formulas", entity_id: "k1", before: null, after: { formula_type: "composite" }, ip_address: "203.113.10.2", user_agent: "Mozilla/5.0 (Macintosh) Chrome/124", request_id: null, created_at: "2026-04-20T16:00:00Z" },
 ];
 
 export const demoRevenueTrend = [

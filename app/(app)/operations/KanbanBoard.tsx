@@ -1,10 +1,11 @@
 "use client";
 
-import { useState, useRef, useTransition } from "react";
+import { useState, useRef, useTransition, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import type { Task, Employee, Kpi } from "@/types/domain";
 import type { FilterState } from "./TaskFilterBar";
 import { applyFilters } from "./TaskFilterBar";
+import { isTaskOverdue, todayLocalISO } from "./sprint-utils";
 import { updateTaskStatusAction } from "@/app/(app)/workspace/actions";
 import {
   Calendar,
@@ -70,15 +71,12 @@ const PRIORITY_LABEL: Record<Task["priority"], string> = {
   low: "Low",
 };
 
-function isOverdue(task: Task): boolean {
-  if (!task.due_date || task.status === "done" || task.status === "cancelled") return false;
-  return new Date(task.due_date) < new Date();
-}
-
 function daysUntilDue(task: Task): number | null {
   if (!task.due_date) return null;
-  const diff = new Date(task.due_date).getTime() - Date.now();
-  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  const today = todayLocalISO();
+  const due = task.due_date.slice(0, 10);
+  const diffMs = new Date(due + "T00:00:00").getTime() - new Date(today + "T00:00:00").getTime();
+  return Math.round(diffMs / (1000 * 60 * 60 * 24));
 }
 
 type Props = {
@@ -100,6 +98,19 @@ export function KanbanBoard({
   const [dragOverCol, setDragOverCol] = useState<TaskStatus | null>(null);
   const [isPending, startTransition] = useTransition();
   const draggingId = useRef<string | null>(null);
+
+  // Khi server trả tasks mới (sau revalidatePath), bỏ override cục bộ nào đã match
+  // — tránh kanban hiển thị lệch với SprintView/list view.
+  useEffect(() => {
+    setLocalStatus((prev) => {
+      const next: Record<string, TaskStatus> = {};
+      for (const [id, status] of Object.entries(prev)) {
+        const t = tasks.find((x) => x.id === id);
+        if (t && t.status !== status) next[id] = status;
+      }
+      return next;
+    });
+  }, [tasks]);
 
   const filteredTasks = applyFilters(tasks, filters);
 
@@ -149,7 +160,7 @@ export function KanbanBoard({
   function TaskCard({ task }: { task: Task }) {
     const assignee = employees.find((e) => e.id === task.assignee_id);
     const kpi = kpis.find((k) => k.id === task.linked_kpi_id);
-    const overdue = isOverdue(task);
+    const overdue = isTaskOverdue(task);
     const days = daysUntilDue(task);
     const isSelected = selectedIds.includes(task.id);
 
@@ -255,7 +266,7 @@ export function KanbanBoard({
         {resolvedTasks.map((task) => {
           const assignee = employees.find((e) => e.id === task.assignee_id);
           const kpi = kpis.find((k) => k.id === task.linked_kpi_id);
-          const overdue = isOverdue(task);
+          const overdue = isTaskOverdue(task);
           const days = daysUntilDue(task);
           const col = COLUMNS.find((c) => c.key === task.status);
           const isSelected = selectedIds.includes(task.id);

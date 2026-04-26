@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { TaskFilterBar, type FilterState } from "./TaskFilterBar";
+import { TaskFilterBar, type FilterState, EMPTY_FILTERS } from "./TaskFilterBar";
 import { KanbanBoard } from "./KanbanBoard";
 import { TaskDetailModal } from "./TaskDetailModal";
 import SprintView from "./SprintView";
-import type { Task, Sprint, Employee, Kpi, Department } from "@/types/domain";
+import type { Task, Sprint, Employee, Kpi, Department, TaskResult } from "@/types/domain";
 
 type Props = {
   tasks: Task[];
@@ -13,21 +13,14 @@ type Props = {
   employees: Employee[];
   kpis: Kpi[];
   departments: Department[];
+  taskResults?: TaskResult[];
   kpiLinkPct: number;
 };
 
-export function OperationsBoard({ tasks, sprints, employees, kpis, departments, kpiLinkPct }: Props) {
+export function OperationsBoard({ tasks, sprints, employees, kpis, departments, taskResults = [], kpiLinkPct }: Props) {
   const [activeTab, setActiveTab] = useState<"tasks" | "sprints">("tasks");
 
-  const [filters, setFilters] = useState<FilterState>({
-    search: "",
-    status: "",
-    priority: "",
-    taskType: "",
-    assigneeId: "",
-    overdueOnly: false,
-    view: "kanban",
-  });
+  const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
 
   // Selected task for detail modal
   const [detailTaskId, setDetailTaskId] = useState<string | null>(null);
@@ -71,6 +64,7 @@ export function OperationsBoard({ tasks, sprints, employees, kpis, departments, 
         <>
           <TaskFilterBar
             employees={employees}
+            departments={departments}
             filters={filters}
             onChange={setFilters}
             selectedIds={selectedIds}
@@ -86,23 +80,25 @@ export function OperationsBoard({ tasks, sprints, employees, kpis, departments, 
             onToggleSelect={handleToggleSelect}
             onOpenDetail={(id) => setDetailTaskId(id)}
           />
-
-          {/* Task Detail Modal */}
-          {detailTask && (
-            <TaskDetailModal
-              task={detailTask}
-              employees={employees}
-              kpis={kpis}
-              departments={departments}
-              onClose={() => setDetailTaskId(null)}
-            />
-          )}
         </>
       ) : (
         <SprintView
           tasks={tasks}
           sprints={sprints}
           employees={employees}
+          onOpenDetail={(id) => setDetailTaskId(id)}
+        />
+      )}
+
+      {/* Task Detail Modal — dùng chung cho cả Task Board và Sprint View */}
+      {detailTask && (
+        <TaskDetailModal
+          task={detailTask}
+          employees={employees}
+          kpis={kpis}
+          departments={departments}
+          results={taskResults.filter((r) => r.task_id === detailTask.id)}
+          onClose={() => setDetailTaskId(null)}
         />
       )}
     </>

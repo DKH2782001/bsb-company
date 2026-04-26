@@ -1,10 +1,10 @@
-import test from "node:test";
 import assert from "node:assert/strict";
+import { test } from "vitest";
 import { evaluateFormula } from "../lib/kpi/formulaEngine";
 import { buildKpiRows, simulateImpact } from "../lib/kpi/cascade";
 import { computePayroll } from "../lib/compensation/ruleEngine";
 import { buildBudgetVarianceRows, buildPnlSummary } from "../lib/finance/statements";
-import { canAccessFinance, canManagePeople } from "../lib/auth/permissions";
+import { canAccessFinance, canManagePeople, type UserContext } from "../lib/auth/permissions";
 import { demoAccounting, demoDepartments, demoKpiActuals, demoKpis, demoKpiTargets } from "../lib/queries/demo";
 
 test("formula engine evaluates ratio and sum", () => {
@@ -52,19 +52,19 @@ test("finance helpers compute budget variance and pnl", () => {
 });
 
 test("permission guards reflect role capabilities", () => {
-  const ceoContext = {
+  const ceoContext: UserContext = {
     authUserId: "u1",
     companyId: "c1",
     employeeId: "e1",
-    roles: ["ceo"] as const,
+    roles: ["ceo"],
     scopedDepartmentIds: [],
     scopedTeamIds: [],
   };
-  const employeeContext = {
+  const employeeContext: UserContext = {
     authUserId: "u2",
     companyId: "c1",
     employeeId: "e2",
-    roles: ["employee"] as const,
+    roles: ["employee"],
     scopedDepartmentIds: [],
     scopedTeamIds: [],
   };
