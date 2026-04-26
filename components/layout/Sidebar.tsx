@@ -92,7 +92,7 @@ export function Sidebar({
   };
 
   return (
-    <aside className="hidden md:flex md:w-[240px] md:flex-col md:fixed md:inset-y-0 md:left-0 md:z-30 md:bg-white md:ring-1 md:ring-[var(--line-soft)]">
+    <aside className="hidden md:flex md:w-[240px] md:flex-col md:fixed md:inset-y-0 md:left-0 md:z-30 md:bg-[var(--sidebar-bg)] md:ring-1 md:ring-[var(--line-soft)] transition-colors duration-300">
       <div className="flex h-[78px] items-center gap-3 px-5 border-b border-[var(--line-soft)]">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6D5EF7] to-[#415BFF] text-white font-bold text-base shadow-[0_10px_25px_rgba(88,72,246,0.22)]">
           B
@@ -155,7 +155,7 @@ function renderItem(item: NavItem, pathname: string, t: (k: Parameters<typeof ra
           : "text-[var(--text-soft)] hover:bg-[var(--surface-alt)] hover:text-[var(--text-strong)]",
       )}
     >
-      <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl shrink-0", active ? "bg-white" : "bg-[var(--surface-alt)]")}>
+      <span className={cn("flex h-9 w-9 items-center justify-center rounded-xl shrink-0", active ? "bg-[var(--surface)]" : "bg-[var(--surface-alt)]")}>
         <Icon className="h-[18px] w-[18px] shrink-0" />
       </span>
       <span className="truncate">{t(item.labelKey)}</span>

@@ -10,7 +10,7 @@ export function Separator({
     <div
       role="separator"
       className={cn(
-        "bg-zinc-200",
+        "bg-[var(--separator-color)]",
         orientation === "horizontal" ? "h-px w-full" : "h-full w-px",
         className,
       )}

@@ -35,9 +35,9 @@ export function useToast() {
 }
 
 const ICONS: Record<ToastVariant, React.ReactNode> = {
-  success: <CheckCircle2 className="h-4 w-4 text-emerald-600" />,
-  error: <AlertTriangle className="h-4 w-4 text-red-600" />,
-  info: <Info className="h-4 w-4 text-indigo-600" />,
+  success: <CheckCircle2 className="h-4 w-4 text-[var(--success-text)]" />,
+  error: <AlertTriangle className="h-4 w-4 text-[var(--danger-text)]" />,
+  info: <Info className="h-4 w-4 text-[var(--brand-600)]" />,
 };
 
 export function Toaster({ children }: { children: React.ReactNode }) {
@@ -70,24 +70,24 @@ export function Toaster({ children }: { children: React.ReactNode }) {
             key={t.id}
             role="status"
             className={cn(
-              "pointer-events-auto flex items-start gap-3 rounded-xl border bg-white p-3 shadow-lg",
-              t.variant === "success" && "border-emerald-200",
-              t.variant === "error" && "border-red-200",
-              t.variant === "info" && "border-indigo-200",
+              "pointer-events-auto flex items-start gap-3 rounded-xl border bg-[var(--toast-bg)] p-3 shadow-lg transition-colors duration-200",
+              t.variant === "success" && "border-[var(--success-border)]",
+              t.variant === "error" && "border-[var(--danger-border)]",
+              t.variant === "info" && "border-[var(--info-border)]",
             )}
           >
             <div className="mt-0.5">{ICONS[t.variant]}</div>
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-semibold text-zinc-900">{t.title}</div>
+              <div className="text-sm font-semibold text-[var(--text-strong)]">{t.title}</div>
               {t.description && (
-                <div className="mt-0.5 text-xs text-zinc-600">{t.description}</div>
+                <div className="mt-0.5 text-xs text-[var(--text-soft)]">{t.description}</div>
               )}
             </div>
             <button
               type="button"
               aria-label="Đóng"
               onClick={() => dismiss(t.id)}
-              className="rounded-md p-1 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+              className="rounded-md p-1 text-[var(--text-soft)] hover:bg-[var(--surface-alt)] hover:text-[var(--text-strong)] transition-colors"
             >
               <X className="h-3.5 w-3.5" />
             </button>

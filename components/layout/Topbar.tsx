@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { LocaleSwitcher } from "./LocaleSwitcher";
 import { NotificationBell } from "./NotificationBell";
+import { ThemeToggle } from "./ThemeToggle";
 import { t as rawT, type Locale } from "@/lib/i18n/dict";
 import type { Notification } from "@/types/domain";
 
@@ -29,7 +30,7 @@ export function Topbar({
   const t = (k: Parameters<typeof rawT>[1]) => rawT(locale, k);
 
   return (
-    <header className="sticky top-0 z-20 flex h-[78px] items-center gap-3 bg-white/88 px-6 backdrop-blur ring-1 ring-[var(--line-soft)] md:ml-[240px]">
+    <header className="sticky top-0 z-20 flex h-[78px] items-center gap-3 bg-[var(--topbar-bg)] px-6 backdrop-blur ring-1 ring-[var(--line-soft)] md:ml-[240px] transition-colors duration-300">
       <div className="flex-1 max-w-xl">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[var(--text-soft)]" />
@@ -37,19 +38,21 @@ export function Topbar({
         </div>
       </div>
 
-      <button className="hidden sm:flex items-center gap-2 rounded-2xl bg-[var(--surface-alt)] px-3.5 py-2.5 text-[13px] text-[var(--text-strong)] hover:bg-[#ecefff]">
-        <Calendar className="h-4 w-4 text-zinc-500" />
+      <button className="hidden sm:flex items-center gap-2 rounded-2xl bg-[var(--surface-alt)] px-3.5 py-2.5 text-[13px] text-[var(--text-strong)] hover:bg-[var(--hover-bg)] transition-colors">
+        <Calendar className="h-4 w-4 text-[var(--text-soft)]" />
         <span>{t("topbar.period")}</span>
-        <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+        <ChevronDown className="h-3.5 w-3.5 text-[var(--text-soft)]" />
       </button>
 
       <Link
         href="/guide"
-        className="hidden sm:flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] text-[var(--text-soft)] hover:bg-[var(--surface-alt)] hover:text-[var(--text-strong)]"
+        className="hidden sm:flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] text-[var(--text-soft)] hover:bg-[var(--surface-alt)] hover:text-[var(--text-strong)] transition-colors"
       >
         <HelpCircle className="h-4 w-4" />
         {t("topbar.guide")}
       </Link>
+
+      <ThemeToggle />
 
       <LocaleSwitcher locale={locale} />
 

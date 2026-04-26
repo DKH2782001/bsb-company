@@ -18,7 +18,7 @@ export function LocaleSwitcher({ locale }: { locale: Locale }) {
   };
 
   return (
-    <div className="inline-flex rounded-xl bg-zinc-100 p-1 text-[12px] font-semibold">
+    <div className="inline-flex rounded-xl bg-[var(--locale-bg)] p-1 text-[12px] font-semibold">
       {(["vi", "en"] as Locale[]).map((l) => (
         <button
           key={l}
@@ -26,7 +26,7 @@ export function LocaleSwitcher({ locale }: { locale: Locale }) {
           onClick={() => setLocale(l)}
           className={cn(
             "px-2.5 py-1.5 rounded-lg transition-colors",
-            l === locale ? "bg-white text-indigo-700 shadow-sm" : "text-zinc-500 hover:text-zinc-700",
+            l === locale ? "bg-[var(--locale-active-bg)] text-[var(--brand-700)] shadow-sm" : "text-[var(--text-soft)] hover:text-[var(--text-strong)]",
           )}
         >
           {l === "vi" ? "VI" : "EN"}

@@ -18,27 +18,27 @@ export default async function LoginPage({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-2xl font-bold text-zinc-900">{t("common.login")}</h2>
-        <p className="text-sm text-zinc-500 mt-1">{t("auth.welcome")}</p>
+        <h2 className="text-2xl font-bold text-[var(--text-strong)]">{t("common.login")}</h2>
+        <p className="text-sm text-[var(--text-soft)] mt-1">{t("auth.welcome")}</p>
       </div>
 
       {registered && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+        <div className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]">
           {t("auth.registered")}
         </div>
       )}
       {passwordUpdated && (
-        <div className="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-700">
+        <div className="rounded-lg border border-[var(--success-border)] bg-[var(--success-bg)] p-3 text-sm text-[var(--success-text)]">
           Password updated. Please sign in again.
         </div>
       )}
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+        <div className="rounded-lg border border-[var(--danger-border)] bg-[var(--danger-bg)] p-3 text-sm text-[var(--danger-text)]">
           {error}
         </div>
       )}
       {demoMode && (
-        <div className="rounded-lg border border-indigo-200 bg-indigo-50 p-3 text-sm text-indigo-700">
+        <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-bg)] p-3 text-sm text-[var(--info-text)]">
           Demo mode đang bật. Không cần đăng nhập, anh có thể vào thẳng{" "}
           <Link href="/dashboard" className="font-medium underline">
             dashboard
@@ -56,7 +56,7 @@ export default async function LoginPage({
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">{t("auth.labelPassword")}</Label>
-            <Link href="/reset-password" className="text-xs text-indigo-600 hover:underline">
+            <Link href="/reset-password" className="text-xs text-[var(--brand-600)] hover:underline">
               {t("auth.forgot")}
             </Link>
           </div>
@@ -67,9 +67,9 @@ export default async function LoginPage({
         </Button>
       </form>
 
-      <div className="text-center text-sm text-zinc-500">
+      <div className="text-center text-sm text-[var(--text-soft)]">
         {t("auth.noAccount")}{" "}
-        <Link href="/signup" className="text-indigo-600 font-medium hover:underline">
+        <Link href="/signup" className="text-[var(--brand-600)] font-medium hover:underline">
           {t("common.signup")}
         </Link>
       </div>

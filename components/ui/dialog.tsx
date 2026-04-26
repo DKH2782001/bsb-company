@@ -47,34 +47,34 @@ export function Dialog({
       aria-modal="true"
     >
       <div
-        className="absolute inset-0 bg-zinc-900/40 backdrop-blur-[1px]"
+        className="absolute inset-0 bg-[var(--overlay-bg)] backdrop-blur-[1px]"
         onClick={onClose}
       />
       <div
         className={cn(
-          "relative z-10 w-full rounded-2xl bg-white shadow-2xl",
+          "relative z-10 w-full rounded-2xl bg-[var(--dialog-bg)] shadow-2xl transition-colors duration-200",
           widthCls,
         )}
       >
-        <div className="flex items-start justify-between gap-4 border-b border-zinc-200 px-5 py-4">
+        <div className="flex items-start justify-between gap-4 border-b border-[var(--line-soft)] px-5 py-4">
           <div className="min-w-0">
-            <div className="text-base font-semibold text-zinc-900">{title}</div>
+            <div className="text-base font-semibold text-[var(--text-strong)]">{title}</div>
             {description && (
-              <div className="mt-1 text-xs text-zinc-500">{description}</div>
+              <div className="mt-1 text-xs text-[var(--text-soft)]">{description}</div>
             )}
           </div>
           <button
             type="button"
             aria-label="Đóng"
             onClick={onClose}
-            className="rounded-md p-1.5 text-zinc-400 hover:bg-zinc-100 hover:text-zinc-700"
+            className="rounded-md p-1.5 text-[var(--text-soft)] hover:bg-[var(--surface-alt)] hover:text-[var(--text-strong)] transition-colors"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
         {children && <div className="px-5 py-4">{children}</div>}
         {footer && (
-          <div className="flex items-center justify-end gap-2 border-t border-zinc-200 bg-zinc-50/60 px-5 py-3 rounded-b-2xl">
+          <div className="flex items-center justify-end gap-2 border-t border-[var(--line-soft)] bg-[var(--surface-alt)]/60 px-5 py-3 rounded-b-2xl">
             {footer}
           </div>
         )}

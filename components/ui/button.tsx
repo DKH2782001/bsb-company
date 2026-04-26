@@ -3,13 +3,13 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-500)] disabled:pointer-events-none disabled:opacity-50",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-medium transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--brand-500)] disabled:pointer-events-none disabled:opacity-50",
   {
     variants: {
       variant: {
-        default: "bg-[linear-gradient(135deg,var(--brand-600),#415bff)] text-white shadow-[0_12px_24px_rgba(88,72,246,0.22)] hover:brightness-[1.03]",
-        secondary: "bg-[var(--surface-alt)] text-[var(--text-strong)] hover:bg-[#ebeeff]",
-        outline: "border border-[var(--line-soft)] bg-white text-[var(--text-strong)] hover:bg-[var(--surface-alt)]",
+        default: "bg-[linear-gradient(135deg,var(--brand-600),#415bff)] text-white shadow-[0_12px_24px_rgba(88,72,246,0.22)] hover:brightness-[1.08]",
+        secondary: "bg-[var(--surface-alt)] text-[var(--text-strong)] hover:bg-[var(--hover-subtle)]",
+        outline: "border border-[var(--line-soft)] bg-[var(--surface)] text-[var(--text-strong)] hover:bg-[var(--surface-alt)]",
         ghost: "text-[var(--text-soft)] hover:bg-[var(--surface-alt)]",
         destructive: "bg-red-600 text-white hover:bg-red-700",
         link: "text-[var(--brand-600)] underline-offset-4 hover:underline",

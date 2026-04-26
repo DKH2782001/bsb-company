@@ -27,14 +27,14 @@ export function FormField({
       {label && (
         <Label htmlFor={htmlFor}>
           {label}
-          {required && <span className="ml-0.5 text-red-500">*</span>}
+          {required && <span className="ml-0.5 text-[var(--danger-text)]">*</span>}
         </Label>
       )}
       {children}
       {errMsg ? (
-        <p className="text-xs text-red-600">{errMsg}</p>
+        <p className="text-xs text-[var(--danger-text)]">{errMsg}</p>
       ) : hint ? (
-        <p className="text-xs text-zinc-500">{hint}</p>
+        <p className="text-xs text-[var(--text-soft)]">{hint}</p>
       ) : null}
     </div>
   );
@@ -47,9 +47,10 @@ export const Select = React.forwardRef<
   <select
     ref={ref}
     className={cn(
-      "h-11 w-full rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]",
+      "h-11 w-full rounded-2xl border border-[var(--line-soft)] bg-[var(--input-bg)] px-3.5 text-sm text-[var(--text-strong)]",
       "focus:outline-none focus:ring-2 focus:ring-[var(--brand-500)] focus:border-transparent",
       "disabled:cursor-not-allowed disabled:opacity-50",
+      "transition-colors duration-200",
       className,
     )}
     {...props}

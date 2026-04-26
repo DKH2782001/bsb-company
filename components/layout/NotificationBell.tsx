@@ -138,25 +138,25 @@ export function NotificationBell({ initialItems, initialUnread, authUserId, hasS
           setOpen((o) => !o);
           if (!open) refresh(false);
         }}
-        className="relative rounded-2xl p-3 text-[var(--text-soft)] hover:bg-[var(--surface-alt)]"
+        className="relative rounded-2xl p-3 text-[var(--text-soft)] hover:bg-[var(--surface-alt)] transition-colors"
         aria-label="Thông báo"
       >
         <Bell className="h-[18px] w-[18px]" />
         {unread > 0 && (
-          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+          <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-[var(--surface)]">
             {unread > 99 ? "99+" : unread}
           </span>
         )}
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] bg-white rounded-xl shadow-2xl border border-zinc-200 z-50 flex flex-col">
-          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+        <div className="absolute right-0 top-full mt-2 w-[360px] max-h-[480px] bg-[var(--dialog-bg)] rounded-xl shadow-2xl border border-[var(--line-soft)] z-50 flex flex-col transition-colors duration-200">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--line-soft)]">
             <div className="flex items-center gap-2">
-              <Bell className="h-4 w-4 text-indigo-600" />
-              <span className="text-sm font-semibold text-zinc-800">Thông báo</span>
+              <Bell className="h-4 w-4 text-[var(--brand-600)]" />
+              <span className="text-sm font-semibold text-[var(--text-strong)]">Thông báo</span>
               {unread > 0 && (
-                <span className="px-1.5 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">
+                <span className="px-1.5 py-0.5 rounded-full bg-[var(--danger-bg)] text-[var(--danger-text)] text-[10px] font-bold">
                   {unread} mới
                 </span>
               )}
@@ -164,7 +164,7 @@ export function NotificationBell({ initialItems, initialUnread, authUserId, hasS
             {unread > 0 && (
               <button
                 onClick={handleMarkAll}
-                className="text-xs text-indigo-600 hover:text-indigo-700 flex items-center gap-1"
+                className="text-xs text-[var(--brand-600)] hover:text-[var(--brand-700)] flex items-center gap-1 transition-colors"
               >
                 <CheckCheck className="h-3.5 w-3.5" />
                 Đánh dấu đã đọc
@@ -174,7 +174,7 @@ export function NotificationBell({ initialItems, initialUnread, authUserId, hasS
 
           <div className="flex-1 overflow-y-auto">
             {items.length === 0 ? (
-              <div className="text-center py-12 text-sm text-zinc-400">
+              <div className="text-center py-12 text-sm text-[var(--text-soft)]">
                 <Bell className="h-8 w-8 mx-auto mb-2 opacity-30" />
                 Chưa có thông báo nào
               </div>
@@ -184,20 +184,20 @@ export function NotificationBell({ initialItems, initialUnread, authUserId, hasS
                   <li key={n.id}>
                     <button
                       onClick={() => handleItemClick(n)}
-                      className={`w-full text-left px-4 py-3 hover:bg-zinc-50 border-b border-zinc-50 transition-colors ${!n.read_at ? "bg-indigo-50/30" : ""}`}
+                      className={`w-full text-left px-4 py-3 hover:bg-[var(--surface-alt)] border-b border-[var(--line-soft)]/40 transition-colors ${!n.read_at ? "bg-[var(--brand-50)]/30" : ""}`}
                     >
                       <div className="flex items-start gap-2">
                         <span
-                          className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${!n.read_at ? "bg-indigo-500" : "bg-transparent"}`}
+                          className={`mt-1.5 h-2 w-2 rounded-full shrink-0 ${!n.read_at ? "bg-[var(--brand-500)]" : "bg-transparent"}`}
                         />
                         <div className="flex-1 min-w-0">
-                          <div className={`text-sm ${!n.read_at ? "font-semibold text-zinc-900" : "text-zinc-700"} truncate`}>
+                          <div className={`text-sm ${!n.read_at ? "font-semibold text-[var(--text-strong)]" : "text-[var(--text-soft)]"} truncate`}>
                             {n.title}
                           </div>
-                          {n.body && <div className="text-xs text-zinc-500 mt-0.5 line-clamp-2">{n.body}</div>}
-                          <div className="text-[10px] text-zinc-400 mt-1">{formatRelative(n.created_at)}</div>
+                          {n.body && <div className="text-xs text-[var(--text-soft)] mt-0.5 line-clamp-2">{n.body}</div>}
+                          <div className="text-[10px] text-[var(--text-soft)] opacity-60 mt-1">{formatRelative(n.created_at)}</div>
                         </div>
-                        {!n.read_at && <Check className="h-3.5 w-3.5 text-indigo-400 shrink-0 mt-1" />}
+                        {!n.read_at && <Check className="h-3.5 w-3.5 text-[var(--brand-500)] shrink-0 mt-1" />}
                       </div>
                     </button>
                   </li>
@@ -206,7 +206,7 @@ export function NotificationBell({ initialItems, initialUnread, authUserId, hasS
             )}
           </div>
 
-          <div className="px-4 py-2 border-t border-zinc-100 text-[10px] text-zinc-400 text-center">
+          <div className="px-4 py-2 border-t border-[var(--line-soft)] text-[10px] text-[var(--text-soft)] text-center">
             {hasSupabase ? "🔴 Realtime" : "⏱ Poll mỗi 20s"}
           </div>
         </div>

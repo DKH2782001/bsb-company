@@ -8,6 +8,14 @@ import { PageHeader } from "@/components/layout/PageHeader";
 import { ProfileAvatarUploader } from "@/components/profile/ProfileAvatarUploader";
 import { ProfileDocumentUploads } from "@/components/profile/ProfileDocumentUploads";
 import { ProfileMfaPanel } from "@/components/profile/ProfileMfaPanel";
+import { ProfileTabs } from "@/components/profile/ProfileTabs";
+import { ChangePasswordDialog } from "@/components/profile/ChangePasswordDialog";
+import { SecurityQuestionsDialog } from "@/components/profile/SecurityQuestionsDialog";
+import { RecoveryMethodsDialog } from "@/components/profile/RecoveryMethodsDialog";
+import { RolesManageDialog } from "@/components/profile/RolesManageDialog";
+import { IntegrationsManageDialog } from "@/components/profile/IntegrationsManageDialog";
+import { ActivityFullDialog } from "@/components/profile/ActivityFullDialog";
+import { PreferenceSelect } from "@/components/profile/PreferenceSelect";
 import { SettingsListRow } from "@/components/shared/SettingsListRow";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -107,39 +115,45 @@ export default async function ProfilePage() {
             <CardTitle>Thông tin cá nhân</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="mb-5 flex items-center gap-4 border-b border-[var(--line-soft)] pb-4 text-sm">
-              {["Hồ sơ cơ bản", "Liên hệ", "Chữ ký điện tử"].map((tab, index) => (
-                <div
-                  key={tab}
-                  className={index === 0 ? "border-b-2 border-[var(--brand-600)] pb-3 font-semibold text-[var(--brand-700)]" : "pb-3 text-[var(--text-soft)]"}
-                >
-                  {tab}
-                </div>
-              ))}
-            </div>
+            <ProfileTabs
+              basicTab={
+                <form action={updateProfileAction} className="grid gap-5 lg:grid-cols-[160px_1fr]">
+                  <ProfileAvatarUploader
+                    name={employee?.full_name ?? "Người dùng demo"}
+                    initialAvatarUrl={employee?.avatar_url}
+                  />
 
-            <form action={updateProfileAction} className="grid gap-5 lg:grid-cols-[160px_1fr]">
-              <ProfileAvatarUploader
-                name={employee?.full_name ?? "Người dùng demo"}
-                initialAvatarUrl={employee?.avatar_url}
-              />
-
-              <div className="grid gap-3">
-                <ProfileField label="Họ tên" name="fullName" defaultValue={employee?.full_name ?? (authUser?.user_metadata?.full_name as string) ?? ""} />
-                <StaticField label="Chức danh" value="CEO" />
-                <StaticField label="Email công việc" value={employee?.email ?? authUser?.email ?? "demo@bizos.local"} />
-                <ProfileField label="Số điện thoại" name="phone" defaultValue={employee?.phone ?? ""} />
-                <StaticField label="Phòng ban" value={employee?.department_id ? "Ban Giám đốc" : "Chưa gán"} />
-                <StaticField label="Mã nhân sự" value={employee?.code ?? "NV00001"} />
-                <StaticField label="Ngày tham gia" value={formatDateVN(employee?.join_date ?? "2024-04-01")} />
-                <ProfileField label="Múi giờ" name="timezone" defaultValue={preference.timezone ?? "Asia/Ho_Chi_Minh"} />
-                <div className="pt-2">
-                  <Button type="submit" className="w-full lg:w-[220px]">
-                    Lưu thay đổi
-                  </Button>
-                </div>
-              </div>
-            </form>
+                  <div className="grid gap-3">
+                    <ProfileField label="Họ tên" name="fullName" defaultValue={employee?.full_name ?? (authUser?.user_metadata?.full_name as string) ?? ""} />
+                    <StaticField label="Chức danh" value="CEO" />
+                    <StaticField label="Email công việc" value={employee?.email ?? authUser?.email ?? "demo@bizos.local"} />
+                    <ProfileField label="Số điện thoại" name="phone" defaultValue={employee?.phone ?? ""} />
+                    <StaticField label="Phòng ban" value={employee?.department_id ? "Ban Giám đốc" : "Chưa gán"} />
+                    <StaticField label="Mã nhân sự" value={employee?.code ?? "NV00001"} />
+                    <StaticField label="Ngày tham gia" value={formatDateVN(employee?.join_date ?? "2024-04-01")} />
+                    <ProfileField label="Múi giờ" name="timezone" defaultValue={preference.timezone ?? "Asia/Ho_Chi_Minh"} />
+                    <div className="pt-2">
+                      <Button type="submit" className="w-full lg:w-[220px]">
+                        Lưu thay đổi
+                      </Button>
+                    </div>
+                  </div>
+                </form>
+              }
+              contactData={{
+                personalEmail: employee?.email ?? authUser?.email ?? "demo@bizos.local",
+                phone: employee?.phone ?? "0943 494 158",
+                workPhone: "",
+                address: "",
+                emergencyContact: "",
+                emergencyPhone: "",
+              }}
+              signatureData={{
+                fullName: employee?.full_name ?? "Nguyễn Văn A",
+                position: "CEO",
+                email: employee?.email ?? authUser?.email ?? "ceo@bizos.demo",
+              }}
+            />
           </CardContent>
         </Card>
 
@@ -154,12 +168,16 @@ export default async function ProfilePage() {
                 <div className="mt-3 text-xs text-[var(--text-soft)]">Mức độ bảo mật</div>
               </div>
               <div className="space-y-3">
-                <SettingsListRow
-                  icon={<KeyRound className="h-4 w-4" />}
-                  title="Đổi mật khẩu"
-                  hint="Cập nhật 20/05/2024"
-                  action="Cập nhật"
-                />
+                <div className="flex items-center gap-3 rounded-[20px] border border-[var(--line-soft)] bg-white dark:bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-soft)]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface-alt)] text-[var(--brand-600)]">
+                    <KeyRound className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-[var(--text-strong)]">Đổi mật khẩu</div>
+                    <div className="mt-0.5 text-xs text-[var(--text-soft)]">Cập nhật 20/05/2024</div>
+                  </div>
+                  <ChangePasswordDialog hasSupabaseEnv={canUseSupabaseAuth} />
+                </div>
                 <ProfileMfaPanel
                   hasSupabaseEnv={canUseSupabaseAuth}
                   initialEnabled={Boolean(
@@ -169,18 +187,26 @@ export default async function ProfilePage() {
                       securitySettings.two_factor,
                   )}
                 />
-                <SettingsListRow
-                  icon={<CheckCircle2 className="h-4 w-4" />}
-                  title="Câu hỏi bảo mật"
-                  hint="Đã thiết lập"
-                  action="Quản lý"
-                />
-                <SettingsListRow
-                  icon={<Mail className="h-4 w-4" />}
-                  title="Phương thức khôi phục"
-                  hint="Email, SĐT dự phòng"
-                  action="Xem"
-                />
+                <div className="flex items-center gap-3 rounded-[20px] border border-[var(--line-soft)] bg-white dark:bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-soft)]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface-alt)] text-[var(--brand-600)]">
+                    <CheckCircle2 className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-[var(--text-strong)]">Câu hỏi bảo mật</div>
+                    <div className="mt-0.5 text-xs text-[var(--text-soft)]">Đã thiết lập</div>
+                  </div>
+                  <SecurityQuestionsDialog />
+                </div>
+                <div className="flex items-center gap-3 rounded-[20px] border border-[var(--line-soft)] bg-white dark:bg-[var(--surface)] px-4 py-3.5 shadow-[var(--shadow-soft)]">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--surface-alt)] text-[var(--brand-600)]">
+                    <Mail className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-sm font-semibold text-[var(--text-strong)]">Phương thức khôi phục</div>
+                    <div className="mt-0.5 text-xs text-[var(--text-soft)]">Email, SĐT dự phòng</div>
+                  </div>
+                  <RecoveryMethodsDialog />
+                </div>
               </div>
             </CardContent>
           </Card>
@@ -192,10 +218,10 @@ export default async function ProfilePage() {
             <CardContent>
               <form action={updatePreferencesAction} className="space-y-4">
                 <div className="grid gap-3 md:grid-cols-2">
-                  <PreferenceField label="Ngôn ngữ" name="locale" defaultValue={preference.locale ?? "vi"} />
-                  <PreferenceField label="Múi giờ" name="timezone" defaultValue={preference.timezone ?? "Asia/Ho_Chi_Minh"} />
-                  <PreferenceField label="Định dạng ngày" name="dateFormat" defaultValue={preference.date_format ?? "DD/MM/YYYY"} />
-                  <PreferenceField label="Giao diện" name="theme" defaultValue={preference.theme ?? "light"} />
+                  <PreferenceSelect label="Ngôn ngữ" name="locale" defaultValue={preference.locale ?? "vi"} />
+                  <PreferenceSelect label="Múi giờ" name="timezone" defaultValue={preference.timezone ?? "Asia/Ho_Chi_Minh"} />
+                  <PreferenceSelect label="Định dạng ngày" name="dateFormat" defaultValue={preference.date_format ?? "DD/MM/YYYY"} />
+                  <PreferenceSelect label="Giao diện" name="theme" defaultValue={preference.theme ?? "light"} />
                 </div>
 
                 <div className="rounded-[22px] bg-[var(--surface-alt)] p-4">
@@ -221,7 +247,7 @@ export default async function ProfilePage() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle>Quyền truy cập hiện có</CardTitle>
-                <span className="text-xs font-medium text-[var(--brand-600)]">Quản lý</span>
+                <RolesManageDialog roles={roles} />
               </div>
             </CardHeader>
             <CardContent className="space-y-2.5">
@@ -323,7 +349,7 @@ export default async function ProfilePage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle>Ứng dụng kết nối</CardTitle>
-              <span className="text-xs font-medium text-[var(--brand-600)]">Quản lý</span>
+              <IntegrationsManageDialog integrations={integrations} />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -349,7 +375,7 @@ export default async function ProfilePage() {
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle>Hoạt động gần đây</CardTitle>
-              <span className="text-xs font-medium text-[var(--brand-600)]">Xem tất cả</span>
+              <ActivityFullDialog activities={recentActivity} />
             </div>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -377,23 +403,6 @@ export default async function ProfilePage() {
 }
 
 function ProfileField({
-  label,
-  name,
-  defaultValue,
-}: {
-  label: string;
-  name: string;
-  defaultValue: string;
-}) {
-  return (
-    <label className="grid gap-1.5">
-      <span className="text-xs font-medium text-[var(--text-soft)]">{label}</span>
-      <Input name={name} defaultValue={defaultValue} />
-    </label>
-  );
-}
-
-function PreferenceField({
   label,
   name,
   defaultValue,

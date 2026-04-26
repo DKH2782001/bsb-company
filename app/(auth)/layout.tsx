@@ -62,7 +62,7 @@ export default async function AuthLayout({ children }: { children: React.ReactNo
         </div>
       </div>
 
-      <div className="flex items-center justify-center p-6 lg:p-12 relative">
+      <div className="flex items-center justify-center p-6 lg:p-12 relative bg-[var(--background)] transition-colors duration-300">
         <div className="absolute top-4 right-4 lg:hidden">
           <LocaleSwitcher locale={locale} />
         </div>

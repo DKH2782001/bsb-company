@@ -38,7 +38,7 @@ export function HelpButton({
         type="button"
         onClick={() => setOpen(true)}
         aria-label={t("help.button")}
-        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[var(--surface-alt)] px-3.5 text-[13px] font-medium text-[var(--text-soft)] hover:bg-indigo-50 hover:text-indigo-600 transition-colors"
+        className="inline-flex h-10 items-center gap-2 rounded-2xl bg-[var(--surface-alt)] px-3.5 text-[13px] font-medium text-[var(--text-soft)] hover:bg-[var(--brand-50)] hover:text-[var(--brand-600)] transition-colors"
         title={t("help.button")}
       >
         <HelpCircle className="h-[18px] w-[18px]" />
@@ -52,22 +52,22 @@ export function HelpButton({
         closeLabel={t("help.close")}
       >
         {!entry ? (
-          <div className="p-5 text-[13px] text-zinc-500">{t("help.noContent")}</div>
+          <div className="p-5 text-[13px] text-[var(--text-soft)]">{t("help.noContent")}</div>
         ) : (
           <div className="flex flex-col">
-            <div className="px-5 pt-4 pb-3 border-b border-zinc-100">
+            <div className="px-5 pt-4 pb-3 border-b border-[var(--line-soft)]">
               <div className="flex items-start gap-2.5">
-                <span className="h-9 w-9 rounded-lg bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                <span className="h-9 w-9 rounded-lg bg-[var(--brand-50)] text-[var(--brand-600)] flex items-center justify-center shrink-0">
                   <entry.icon className="h-4 w-4" />
                 </span>
                 <div className="min-w-0">
-                  <div className="text-[11px] text-zinc-500 mb-0.5">{t("help.summary")}</div>
-                  <p className="text-[13px] text-zinc-700 leading-relaxed">{entry.summary[locale]}</p>
+                  <div className="text-[11px] text-[var(--text-soft)] mb-0.5">{t("help.summary")}</div>
+                  <p className="text-[13px] text-[var(--text-strong)] leading-relaxed">{entry.summary[locale]}</p>
                 </div>
               </div>
             </div>
 
-            <div className="px-5 pt-3 border-b border-zinc-100">
+            <div className="px-5 pt-3 border-b border-[var(--line-soft)]">
               <div className="flex gap-4">
                 <TabButton
                   active={activeTab === "admin"}
@@ -84,13 +84,13 @@ export function HelpButton({
 
             <div className="p-5 space-y-4">
               <div>
-                <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-2">
+                <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-soft)] mb-2">
                   {t("help.steps")}
                 </div>
-                <ol className="space-y-2 text-[13px] text-zinc-700">
+                <ol className="space-y-2 text-[13px] text-[var(--foreground)]">
                   {entry[activeTab][locale].map((step, i) => (
                     <li key={i} className="flex items-start gap-2.5">
-                      <span className="mt-0.5 h-5 w-5 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-semibold flex items-center justify-center shrink-0">
+                      <span className="mt-0.5 h-5 w-5 rounded-full bg-[var(--brand-50)] text-[var(--brand-700)] text-[11px] font-semibold flex items-center justify-center shrink-0">
                         {i + 1}
                       </span>
                       <span className="leading-relaxed">{step}</span>
@@ -100,14 +100,14 @@ export function HelpButton({
               </div>
 
               {entry.tips && entry.tips[locale].length > 0 && (
-                <div className="rounded-lg bg-zinc-50 p-3">
-                  <div className="text-[11px] font-semibold uppercase tracking-wider text-zinc-500 mb-1.5">
+                <div className="rounded-lg bg-[var(--surface-alt)] p-3">
+                  <div className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-soft)] mb-1.5">
                     {t("help.tips")}
                   </div>
-                  <ul className="space-y-1 text-[12.5px] text-zinc-700">
+                  <ul className="space-y-1 text-[12.5px] text-[var(--foreground)]">
                     {entry.tips[locale].map((tip, i) => (
                       <li key={i} className="flex items-start gap-1.5">
-                        <span className="mt-1.5 h-1 w-1 rounded-full bg-indigo-400 shrink-0" />
+                        <span className="mt-1.5 h-1 w-1 rounded-full bg-[var(--brand-500)] shrink-0" />
                         <span>{tip}</span>
                       </li>
                     ))}
@@ -120,7 +120,7 @@ export function HelpButton({
                 <Link
                   href="/guide"
                   onClick={() => setOpen(false)}
-                  className="text-[12px] text-indigo-600 font-medium hover:underline"
+                  className="text-[12px] text-[var(--brand-600)] font-medium hover:underline"
                 >
                   {t("help.openGuide")} →
                 </Link>
@@ -149,7 +149,7 @@ function TabButton({
       aria-pressed={active}
       className={cn(
         "whitespace-nowrap border-b-2 px-1 pb-3 text-[13px] font-medium transition-colors",
-        active ? "border-indigo-600 text-indigo-700" : "border-transparent text-zinc-500 hover:text-zinc-700",
+        active ? "border-[var(--brand-600)] text-[var(--brand-700)]" : "border-transparent text-[var(--text-soft)] hover:text-[var(--text-strong)]",
       )}
     >
       {label}
