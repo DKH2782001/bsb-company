@@ -119,7 +119,13 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 > - [x] **Đợt E** — Bulk Import/Export với SheetJS (Employees / KPIs / Accounting Entries / Requisitions). Operations bị Phase 0 loại trừ ✅
 > - [x] **Đợt F** — Vitest + GitHub Actions CI (lint + typecheck + test) ✅
 >   - Cần cung cấp khi bật observability: `SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`.
-> - [ ] Đợt G — Auth/MFA/Session/Reset password/Rate limit (code scaffold đã sẵn; chờ Supabase Auth thật để test end-to-end)
+> - [x] Đợt G — Auth/MFA/Session/Reset password/Rate limit ✅ (đầy đủ scaffold; chờ Supabase Auth thật để test end-to-end)
+>   - **MFA TOTP**: `ProfileMfaPanel` enroll → challenge → verify → unenroll qua `supabase.auth.mfa.*`
+>   - **Reset password**: `sendReset` → email link → `/update-password` page với `UpdatePasswordForm`
+>   - **Đổi mật khẩu**: `changePasswordAction` server-side với rate limit (5/15 phút) + reauth bằng `signInWithPassword(currentPassword)` + `signOut({scope:"others"})` sau khi đổi
+>   - **Session management**: list device + `signOutOtherSessionsAction`
+>   - **Rate limit** áp cho login (8/5 phút), signup (5/10 phút), reset (3/15 phút), change-password (5/15 phút)
+>   - **Phụ trợ**: `SecurityQuestionsDialog`, `RecoveryMethodsDialog`, `RolesManageDialog`, `IntegrationsManageDialog`
 >   - Cần cung cấp khi chạy thật: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `NEXT_PUBLIC_APP_URL`; bật Email Auth, thêm redirect URL `/update-password`, bật MFA TOTP và cấu hình SMTP/email provider.
 > - [~] ~~Đợt H — Mobile responsive + bottom nav + PWA~~ — **BỎ** (không làm mobile app)
 >
@@ -195,6 +201,35 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 
 **Mục tiêu:** Build module HRM cốt lõi mà mọi SME VN đều cần dùng hằng ngày.
 
+> **Tiến độ thực thi:**
+> - [x] **Đợt 1A** — Schema migration `20260427090000_phase1_hr_core.sql`: 7 bảng attendance, 3 bảng leave, holidays_vn, contract_amendments + extend employment_contracts, employee_documents, employee_dependents, 4 bảng onboarding/offboarding + enums + RLS tenant_select ✅
+> - [~] ~~Đợt 1B~~ — Seed lịch nghỉ lễ VN + leave_types mặc định — **BỎ** (mỗi công ty tự cấu hình; sẽ có nút "Import lịch lễ VN" trong settings ở 1D)
+> - [x] **Đợt 1C** — Check-in/out web ✅
+>   - Repository [lib/repositories/attendance.ts](lib/repositories/attendance.ts) với haversine GPS check + IP whitelist + auto-calc late/early/worked minutes
+>   - Server actions [app/(app)/attendance/actions.ts](app/(app)/attendance/actions.ts) với rate limit (6/phút)
+>   - Trang nhân viên [/attendance](app/(app)/attendance/page.tsx): Status card, GPS picker, check-in/out button, lịch sử tháng + summary
+>   - Trang admin [/attendance/settings](app/(app)/attendance/settings/page.tsx): CRUD locations + shifts qua dialog
+>   - Sidebar nav: thêm "Chấm công" trong nhóm People
+>   - Audit log đầy đủ: `attendance.check_in`, `attendance.check_out`, `attendance.location.upsert/delete`, `attendance.shift.upsert/delete`
+> - [x] **Đợt 1D** — Nghỉ phép ✅
+>   - Repository [lib/repositories/leave.ts](lib/repositories/leave.ts) với working-days calculator (loại trừ T7/CN), pending/used/entitled tracking
+>   - Server actions [app/(app)/leave/actions.ts](app/(app)/leave/actions.ts): submit/cancel/decide + leave_types CRUD + holidays CRUD/import VN
+>   - Trang [/leave](app/(app)/leave/page.tsx): 4 thẻ quota (còn / đã dùng / chờ duyệt), form submit (loại nghỉ + ngày + nửa ngày + bàn giao), card ngày lễ sắp tới, lịch sử + huỷ đơn
+>   - Trang [/leave/approvals](app/(app)/leave/approvals/page.tsx): danh sách chờ duyệt + approve/reject với note + lịch sử quyết định
+>   - Trang [/leave/calendar](app/(app)/leave/calendar/page.tsx): grid 7 cột với navigation tháng trước/sau, hiển thị tên người + tô màu theo status, badge ngày lễ
+>   - Trang [/leave/settings](app/(app)/leave/settings/page.tsx): CRUD leave_types + holidays + nút "Import lịch lễ VN" (preset 6 ngày, year-aware)
+>   - Sidebar nav: thêm "Nghỉ phép" trong nhóm People
+>   - Audit log: `leave.request.submit/approve/reject/cancel`, `leave.type.upsert/delete`, `leave.holiday.upsert/delete/import_vn`
+> - [~] ~~Đợt 1E~~ — Selfie verification + Storage bucket `attendance` (bỏ — không làm)
+> - [x] **Đợt 1F** — Bảng công cuối tháng + lock/unlock ✅
+>   - Migration `20260427170000_attendance_monthly_timesheets.sql`: thêm `attendance_monthly_periods`, `attendance_monthly_rows`, enum trạng thái + RLS/write policies cho CEO/HR Admin.
+>   - Repository [lib/repositories/attendance-timesheets.ts](lib/repositories/attendance-timesheets.ts): tổng hợp ngày làm, nghỉ lương, nghỉ không lương, OT, đi muộn, về sớm theo tháng; cho phép manual adjustment trước khi chốt payroll.
+>   - UI [/attendance/timesheets](app/(app)/attendance/timesheets/page.tsx): xem bảng công theo tháng, tổng hợp lại, chỉnh tay, khóa/mở khóa; trang [/attendance](app/(app)/attendance/page.tsx) có link nhanh sang bảng công tháng.
+> - [ ] Đợt 1G — Contract workspace & hồ sơ: form linh hoạt theo công ty + upload file + versioning + cảnh báo hết hạn
+> - [ ] Đợt 1H — Onboarding/Offboarding checklist + dashboard tracking + liên kết trạng thái hợp đồng
+> - [~] ~~Đợt 1I~~ — Google Calendar sync (hoãn — không bắt buộc)
+> - [~] ~~Đợt 1J~~ — Ký số hợp đồng VNPT-CA/FPT-CA (hoãn — không bắt buộc)
+
 #### 1.1. Chấm công (Time Tracking)
 
 **Tính năng:**
@@ -255,44 +290,63 @@ overtime_requests        -- xin OT
 - HR có thể chỉnh sửa thủ công trước khi chốt
 - Lock bảng công sau khi chốt — chỉ admin được mở khóa
 
-#### 1.5. Hợp đồng & Hồ sơ pháp lý
+#### 1.5. Contract Workspace & Hồ sơ
 
-**Quản lý hợp đồng lao động:**
-- **3 loại theo luật VN:** thử việc, có thời hạn, không thời hạn
-- **Cảnh báo** trước 30 ngày khi hết hạn → đề xuất gia hạn/chuyển vô thời hạn
-- **Phụ lục hợp đồng** (tăng lương, đổi vị trí, đổi địa điểm)
-- **Template hợp đồng** sinh ra Word/PDF từ data nhân viên + ký số (optional)
+**Nguyên tắc scope:**
+- Không hard-code nội dung hợp đồng theo luật VN vào sản phẩm.
+- App đóng vai trò **workspace quản lý hợp đồng và hồ sơ**, còn nội dung pháp lý do công ty/law firm tự quyết.
+- Chỉ chuẩn hóa metadata, quy trình, file, version và trạng thái hoàn tất.
 
-**Hồ sơ:**
+**Quản lý hợp đồng:**
+- **Form linh hoạt theo công ty**: HR tự cấu hình hoặc chọn template nội bộ cho từng loại hợp đồng/phụ lục.
+- **Metadata chuẩn**: mã hợp đồng, nhân sự, loại nội bộ, trạng thái, ngày hiệu lực, ngày hết hạn (nếu có), người ký, ghi chú.
+- **Custom fields** theo template: lương, phụ cấp, địa điểm làm việc, chức danh, điều khoản đặc thù, hoặc các field riêng của công ty.
+- **File-first workflow**: cho phép upload DOCX/PDF gốc do công ty soạn; generate Word/PDF từ template chỉ là tính năng bổ sung về sau.
+- **Versioning / phụ lục**: mỗi lần thay đổi lương, vị trí, địa điểm hoặc điều khoản thì tạo amendment mới, không ghi đè lịch sử.
+- **Cảnh báo hết hạn** trước 30 ngày nếu hợp đồng có `ends_at`; không tự suy luận chuyển vô thời hạn theo luật.
+- **Out of scope**: legal rule engine, auto-drafting theo luật VN, auto-validate điều khoản pháp lý.
+
+**Hồ sơ nhân sự đi kèm:**
 - CCCD/CMND (front + back)
 - Sổ BHXH, mã số thuế cá nhân (MST)
 - Bằng cấp, chứng chỉ
 - Sơ yếu lý lịch
-- Hợp đồng đã ký (PDF)
+- Hợp đồng/phụ lục đã ký (PDF/DOCX)
 - Người phụ thuộc (cho giảm trừ TNCN)
 
 #### 1.6. Onboarding / Offboarding
 
+**Nguyên tắc scope:**
+- `1H` chỉ quản lý **checklist, owner, deadline, trạng thái và dashboard tiến độ**.
+- `1H` không đọc hay phân tích nội dung pháp lý của hợp đồng.
+- Tích hợp với `1G` theo kiểu **state-based**: chỉ quan tâm hợp đồng đã draft, sent, signed hay uploaded.
+
 **Onboarding workflow:**
-1. HR tạo nhân viên mới → tự động tạo checklist:
-   - Ký hợp đồng (HR)
+1. HR tạo nhân viên mới → chọn template onboarding phù hợp.
+2. Hệ thống tự động tạo checklist:
+   - Hoàn tất hợp đồng (HR) — link tới contract record ở `1G`
    - Cấp tài khoản email/Slack (IT)
    - Cấp laptop/thẻ ra vào (Admin)
    - Đăng ký BHXH (HR)
    - Buddy assignment (Manager)
-   - 30/60/90 day review schedule
-2. Mỗi task assign cho người chịu trách nhiệm + deadline
-3. Dashboard track tiến độ onboarding
+   - Lịch review 30/60/90 ngày
+3. Mỗi task có người phụ trách, deadline, trạng thái, ghi chú.
+4. Dashboard theo dõi tiến độ onboard theo nhân sự, phòng ban, overdue task.
 
 **Offboarding workflow:**
-1. Khi nhân viên nghỉ → trigger checklist:
+1. Khi nhân viên nghỉ → chọn template offboarding và trigger checklist:
    - Bàn giao công việc + tài liệu
    - Thu hồi laptop/thẻ
-   - Disable account email/Slack/hệ thống
+   - Disable email/Slack/hệ thống
    - Tính lương cuối kỳ + thanh toán phép tồn
-   - Chốt sổ BHXH
+   - Chốt BHXH / hồ sơ liên quan
    - Exit interview
-2. Lock account sau ngày cuối làm việc
+2. Lock account sau ngày cuối làm việc hoặc khi checklist critical đã hoàn tất.
+3. Dashboard theo dõi task nào còn treo, ai đang phụ trách, hạng mục nào quá hạn.
+
+**Điểm nối giữa `1G` và `1H`:**
+- `1H` chỉ cần biết contract record đang ở trạng thái nào: `draft`, `sent`, `signed`, `uploaded`, `completed`.
+- Khi hợp đồng đạt trạng thái yêu cầu thì task “Hoàn tất hợp đồng” trong onboarding được tick xong.
 
 **Deliverable Phase 1:** Khách hàng pilot có thể dùng app thay thế Excel chấm công + xin nghỉ.
 
@@ -686,7 +740,7 @@ Web PWA chỉ giải quyết được 70%. Để chấm công, push notification
 - **Image optimization** — Next.js Image với CDN
 - **Internationalization** — refine VI/EN, format số/ngày theo locale
 - **Accessibility (a11y)** — keyboard nav, screen reader, contrast WCAG AA
-- **Dark mode**
+- [x] **Dark mode** ✅ (ThemeProvider + ThemeToggle, biến CSS theme trong `app/globals.css`)
 
 **Deliverable Phase 6:** Sản phẩm đủ sức cạnh tranh với Base.vn, có điểm khác biệt rõ ràng (AI + mobile native + giá tốt).
 

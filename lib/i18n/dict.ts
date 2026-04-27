@@ -39,6 +39,8 @@ export const DICT: Dict = {
   "nav.org": { vi: "Sơ đồ tổ chức", en: "Org chart" },
   "nav.departments": { vi: "Phòng ban", en: "Departments" },
   "nav.people": { vi: "Nhân sự", en: "People" },
+  "nav.contracts": { vi: "Hợp đồng & hồ sơ", en: "Contracts & records" },
+  "nav.onboarding": { vi: "Onboarding", en: "Onboarding" },
   "nav.kpi": { vi: "KPI Tree", en: "KPI Tree" },
   "nav.operations": { vi: "Công việc", en: "Operations" },
   "nav.compensation": { vi: "Lương thưởng", en: "Compensation" },
@@ -55,6 +57,9 @@ export const DICT: Dict = {
   "nav.profile": { vi: "Tài khoản", en: "Account" },
   "nav.settings": { vi: "Cài đặt", en: "Settings" },
   "nav.guide": { vi: "Hướng dẫn", en: "Guide" },
+  "nav.attendance": { vi: "Chấm công", en: "Attendance" },
+  "nav.attendanceSettings": { vi: "Cấu hình chấm công", en: "Attendance settings" },
+  "nav.leave": { vi: "Nghỉ phép", en: "Leave" },
 
   // Common labels
   "common.save": { vi: "Lưu", en: "Save" },

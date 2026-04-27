@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -53,6 +54,7 @@ const TYPE_OPTIONS = [
 ];
 
 export function TaskDetailModal({ task, employees, kpis, departments, results = [], onClose }: Props) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [now] = useState(() => Date.now());
   const [dirty, setDirty] = useState(false);
@@ -111,6 +113,7 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
       if (estimatedHours) fd.set("estimatedHours", estimatedHours);
       if (actualHours) fd.set("actualHours", actualHours);
       await updateTaskAction(fd);
+      router.refresh();
       onClose();
     });
   }
@@ -123,6 +126,7 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
       fd.set("taskId", task.id);
       fd.set("status", next);
       await updateTaskStatusAction(fd);
+      router.refresh();
       onClose();
     });
   }
@@ -401,7 +405,17 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
           )}
 
           {/* Task Results */}
-          <TaskResultsSection taskId={task.id} results={results} />
+          <TaskResultsSection
+            taskId={task.id}
+            results={results}
+            onResultSubmitted={() => {
+              setStatus((current) =>
+                current === "todo" || current === "in_progress" || current === "blocked"
+                  ? "review"
+                  : current,
+              );
+            }}
+          />
 
           {/* Meta info */}
           <div className="flex items-center gap-3 text-[10px] text-zinc-400">
@@ -432,7 +446,16 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
   );
 }
 
-function TaskResultsSection({ taskId, results }: { taskId: string; results: TaskResult[] }) {
+function TaskResultsSection({
+  taskId,
+  results,
+  onResultSubmitted,
+}: {
+  taskId: string;
+  results: TaskResult[];
+  onResultSubmitted?: () => void;
+}) {
+  const router = useRouter();
   const [pending, startTr] = useTransition();
   const [mode, setMode] = useState<"link" | "file">("link");
   const [url, setUrl] = useState("");
@@ -466,6 +489,8 @@ function TaskResultsSection({ taskId, results }: { taskId: string; results: Task
       fd.set("label", label || (mode === "link" ? "Link kết quả" : fileName || "File kết quả"));
       fd.set("note", note);
       await addTaskResultAction(fd);
+      onResultSubmitted?.();
+      router.refresh();
       reset();
     });
   }
@@ -475,6 +500,7 @@ function TaskResultsSection({ taskId, results }: { taskId: string; results: Task
       const fd = new FormData();
       fd.set("id", id);
       await deleteTaskResultAction(fd);
+      router.refresh();
     });
   }
 

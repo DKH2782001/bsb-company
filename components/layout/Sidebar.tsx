@@ -4,7 +4,7 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronDown } from "lucide-react";
-import { NAV_GROUPS, type NavGroup, type NavItem } from "@/lib/nav";
+import { NAV_GROUPS, NAV_ITEMS, type NavGroup, type NavItem } from "@/lib/nav";
 import { t as rawT, type Locale } from "@/lib/i18n/dict";
 import { cn } from "@/lib/utils";
 
@@ -142,7 +142,7 @@ export function Sidebar({
 }
 
 function renderItem(item: NavItem, pathname: string, t: (k: Parameters<typeof rawT>[1]) => string) {
-  const active = pathname === item.href || (item.href !== "/" && pathname.startsWith(item.href));
+  const active = isActiveItem(item.href, pathname);
   const Icon = item.icon;
   return (
     <Link
@@ -161,4 +161,11 @@ function renderItem(item: NavItem, pathname: string, t: (k: Parameters<typeof ra
       <span className="truncate">{t(item.labelKey)}</span>
     </Link>
   );
+}
+
+function isActiveItem(href: string, pathname: string) {
+  const matches = NAV_ITEMS.filter((item) => pathname === item.href || (item.href !== "/" && pathname.startsWith(`${item.href}/`)));
+  if (matches.length === 0) return pathname === href;
+  const maxLength = Math.max(...matches.map((item) => item.href.length));
+  return (pathname === href || (href !== "/" && pathname.startsWith(`${href}/`))) && href.length === maxLength;
 }

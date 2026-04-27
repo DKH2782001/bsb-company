@@ -287,3 +287,150 @@ export type AuditLog = {
   request_id: string | null;
   created_at: string;
 };
+
+export type ContractType =
+  | "probation"
+  | "fixed_term"
+  | "indefinite"
+  | "internship"
+  | "collaborator";
+
+export type ContractStatus =
+  | "draft"
+  | "active"
+  | "expiring_soon"
+  | "expired"
+  | "terminated"
+  | "renewed";
+
+export type EmploymentContract = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  starts_at: string;
+  ends_at: string | null;
+  base_salary: number;
+  allowances: Record<string, unknown> | null;
+  document_url: string | null;
+  code: string | null;
+  contract_type: ContractType;
+  status: ContractStatus;
+  position_id: string | null;
+  department_id: string | null;
+  probation_ends_at: string | null;
+  signed_at: string | null;
+  terminated_at: string | null;
+  termination_reason: string | null;
+  notice_period_days: number;
+  working_hours_per_week: number;
+  currency: string;
+  notes: string | null;
+  updated_at: string;
+};
+
+export type ContractAmendment = {
+  id: string;
+  company_id: string;
+  contract_id: string;
+  amendment_no: number;
+  effective_from: string;
+  changes: Record<string, unknown>;
+  reason: string | null;
+  document_url: string | null;
+  signed_at: string | null;
+  created_at: string;
+};
+
+export type EmployeeDocument = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  doc_type: string;
+  label: string;
+  storage_path: string;
+  mime_type: string | null;
+  size_bytes: number | null;
+  expires_on: string | null;
+  uploaded_by: string | null;
+  created_at: string;
+};
+
+export type EmployeeDependent = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  full_name: string;
+  relationship: string;
+  date_of_birth: string | null;
+  national_id: string | null;
+  tax_code: string | null;
+  starts_on: string | null;
+  ends_on: string | null;
+  notes: string | null;
+  created_at: string;
+};
+
+export type OnboardingKind = "onboarding" | "offboarding";
+export type OnboardingRunStatus =
+  | "not_started"
+  | "in_progress"
+  | "completed"
+  | "cancelled";
+export type OnboardingTaskStatus =
+  | "pending"
+  | "in_progress"
+  | "completed"
+  | "skipped"
+  | "overdue";
+
+export type OnboardingTemplate = {
+  id: string;
+  company_id: string;
+  name: string;
+  kind: OnboardingKind;
+  description: string | null;
+  active: boolean;
+  created_at: string;
+};
+
+export type OnboardingTemplateTask = {
+  id: string;
+  company_id: string;
+  template_id: string;
+  sort_order: number;
+  title: string;
+  description: string | null;
+  default_owner_role: string | null;
+  due_offset_days: number;
+  required: boolean;
+};
+
+export type OnboardingRun = {
+  id: string;
+  company_id: string;
+  template_id: string | null;
+  employee_id: string;
+  kind: OnboardingKind;
+  status: OnboardingRunStatus;
+  started_on: string;
+  target_done_on: string | null;
+  completed_at: string | null;
+  notes: string | null;
+  updated_at: string;
+};
+
+export type OnboardingRunTask = {
+  id: string;
+  company_id: string;
+  run_id: string;
+  template_task_id: string | null;
+  sort_order: number;
+  title: string;
+  description: string | null;
+  owner_employee_id: string | null;
+  due_on: string | null;
+  status: OnboardingTaskStatus;
+  completed_at: string | null;
+  completed_by: string | null;
+  notes: string | null;
+};

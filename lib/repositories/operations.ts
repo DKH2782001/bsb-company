@@ -43,6 +43,8 @@ export async function createTask(input: {
   dueDate?: string;
   priority?: "low" | "normal" | "high" | "urgent";
   taskType?: "growth" | "maintenance" | "admin" | "urgent";
+  sprintId?: string;
+  storyPoints?: number;
 }) {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
@@ -58,6 +60,8 @@ export async function createTask(input: {
     priority: input.priority || "normal",
     task_type: input.taskType || "growth",
     status: "todo",
+    sprint_id: input.sprintId || null,
+    story_points: input.storyPoints ?? null,
   };
 
   if (shouldUseDemoStore()) {
@@ -77,8 +81,8 @@ export async function createTask(input: {
       due_date: input.dueDate || null,
       estimated_hours: null,
       actual_hours: null,
-      sprint_id: null,
-      story_points: null,
+      sprint_id: input.sprintId || null,
+      story_points: input.storyPoints ?? null,
       parent_task_id: null,
     };
     demo.demoTasks.push(newTask);
@@ -502,6 +506,7 @@ export async function addTaskResult(input: {
       insert: (v: Record<string, unknown>) => { select: (s: string) => { single: () => Promise<{ data: TaskResult | null }> } };
     };
     const { data } = await table.insert({
+      company_id: context.companyId,
       task_id: input.taskId,
       type: input.type,
       url: input.url,

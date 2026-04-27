@@ -304,6 +304,284 @@ export const demoAuditLogs: AuditLog[] = [
   { id: "au4", company_id: DEMO_COMPANY_ID, actor: "e1", action: "kpi.formula_update", entity: "kpi_formulas", entity_id: "k1", before: null, after: { formula_type: "composite" }, ip_address: "203.113.10.2", user_agent: "Mozilla/5.0 (Macintosh) Chrome/124", request_id: null, created_at: "2026-04-20T16:00:00Z" },
 ];
 
+// Phase 1 — Attendance demo data
+export type DemoAttendanceLocation = {
+  id: string;
+  company_id: string;
+  name: string;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  radius_m: number;
+  ip_whitelist: string[];
+  active: boolean;
+};
+
+export type DemoAttendanceShift = {
+  id: string;
+  company_id: string;
+  code: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  late_grace_minutes: number;
+  early_leave_grace_minutes: number;
+  is_overnight: boolean;
+  active: boolean;
+};
+
+export type DemoAttendanceRecord = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  work_date: string;
+  shift_id: string | null;
+  location_id: string | null;
+  check_in_at: string | null;
+  check_out_at: string | null;
+  late_minutes: number;
+  early_leave_minutes: number;
+  worked_minutes: number;
+  status: "present" | "late" | "early_leave" | "absent" | "on_leave" | "holiday" | "remote" | "incomplete";
+  source: "web" | "mobile" | "biometric" | "manual" | "import";
+  note: string | null;
+};
+
+export const demoAttendanceLocations: DemoAttendanceLocation[] = [
+  {
+    id: "loc-hq-hanoi",
+    company_id: DEMO_COMPANY_ID,
+    name: "Văn phòng Hà Nội",
+    address: "Tầng 7, Tòa nhà Detech II, 107 Nguyễn Phong Sắc, Cầu Giấy, Hà Nội",
+    latitude: 21.038211,
+    longitude: 105.78256,
+    radius_m: 200,
+    ip_whitelist: ["27.72.0.1"],
+    active: true,
+  },
+  {
+    id: "loc-hq-hcm",
+    company_id: DEMO_COMPANY_ID,
+    name: "Chi nhánh TP. Hồ Chí Minh",
+    address: "Lầu 5, Toà nhà Bitexco, Quận 1, TP. HCM",
+    latitude: 10.771679,
+    longitude: 106.704423,
+    radius_m: 150,
+    ip_whitelist: ["14.169.0.1"],
+    active: true,
+  },
+];
+
+export const demoAttendanceShifts: DemoAttendanceShift[] = [
+  {
+    id: "shift-day",
+    company_id: DEMO_COMPANY_ID,
+    code: "DAY",
+    name: "Ca hành chính",
+    start_time: "08:30",
+    end_time: "17:30",
+    break_minutes: 60,
+    late_grace_minutes: 5,
+    early_leave_grace_minutes: 5,
+    is_overnight: false,
+    active: true,
+  },
+  {
+    id: "shift-flex",
+    company_id: DEMO_COMPANY_ID,
+    code: "FLEX",
+    name: "Ca linh hoạt",
+    start_time: "09:00",
+    end_time: "18:00",
+    break_minutes: 60,
+    late_grace_minutes: 15,
+    early_leave_grace_minutes: 15,
+    is_overnight: false,
+    active: true,
+  },
+];
+
+function isoOffsetDays(days: number, hour: number, minute: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  d.setHours(hour, minute, 0, 0);
+  return d.toISOString();
+}
+
+function dateOffset(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() - days);
+  return d.toISOString().slice(0, 10);
+}
+
+export const demoMyAttendanceRecords: DemoAttendanceRecord[] = [
+  {
+    id: "att-1",
+    company_id: DEMO_COMPANY_ID,
+    employee_id: "e1",
+    work_date: dateOffset(1),
+    shift_id: "shift-day",
+    location_id: "loc-hq-hanoi",
+    check_in_at: isoOffsetDays(1, 8, 28),
+    check_out_at: isoOffsetDays(1, 17, 35),
+    late_minutes: 0,
+    early_leave_minutes: 0,
+    worked_minutes: 9 * 60 + 7,
+    status: "present",
+    source: "web",
+    note: null,
+  },
+  {
+    id: "att-2",
+    company_id: DEMO_COMPANY_ID,
+    employee_id: "e1",
+    work_date: dateOffset(2),
+    shift_id: "shift-day",
+    location_id: "loc-hq-hanoi",
+    check_in_at: isoOffsetDays(2, 8, 47),
+    check_out_at: isoOffsetDays(2, 17, 40),
+    late_minutes: 12,
+    early_leave_minutes: 0,
+    worked_minutes: 8 * 60 + 53,
+    status: "late",
+    source: "web",
+    note: "Tắc đường",
+  },
+  {
+    id: "att-3",
+    company_id: DEMO_COMPANY_ID,
+    employee_id: "e1",
+    work_date: dateOffset(3),
+    shift_id: "shift-day",
+    location_id: "loc-hq-hanoi",
+    check_in_at: isoOffsetDays(3, 8, 25),
+    check_out_at: isoOffsetDays(3, 16, 50),
+    late_minutes: 0,
+    early_leave_minutes: 35,
+    worked_minutes: 8 * 60 + 25,
+    status: "early_leave",
+    source: "web",
+    note: null,
+  },
+  {
+    id: "att-4",
+    company_id: DEMO_COMPANY_ID,
+    employee_id: "e1",
+    work_date: dateOffset(4),
+    shift_id: "shift-day",
+    location_id: "loc-hq-hanoi",
+    check_in_at: isoOffsetDays(4, 8, 30),
+    check_out_at: isoOffsetDays(4, 17, 32),
+    late_minutes: 0,
+    early_leave_minutes: 0,
+    worked_minutes: 9 * 60 + 2,
+    status: "present",
+    source: "mobile",
+    note: null,
+  },
+];
+
+// Phase 1 — Leave management demo data
+export type DemoLeaveType = {
+  id: string;
+  company_id: string;
+  code: string;
+  name: string;
+  paid: boolean;
+  default_quota_days: number | null;
+  carry_over_max_days: number;
+  requires_attachment: boolean;
+  description: string | null;
+  active: boolean;
+};
+
+export type DemoLeaveBalance = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  leave_type_id: string;
+  year: number;
+  entitled_days: number;
+  carried_over_days: number;
+  used_days: number;
+  pending_days: number;
+  adjustment_days: number;
+};
+
+export type DemoLeaveRequest = {
+  id: string;
+  company_id: string;
+  employee_id: string;
+  leave_type_id: string;
+  starts_on: string;
+  ends_on: string;
+  half_day_start: boolean;
+  half_day_end: boolean;
+  total_days: number;
+  reason: string | null;
+  handover_to: string | null;
+  status: "draft" | "pending" | "approved" | "rejected" | "cancelled";
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+};
+
+export type DemoHoliday = {
+  id: string;
+  company_id: string | null;
+  name: string;
+  holiday_date: string;
+  is_paid: boolean;
+  is_substitute: boolean;
+  notes: string | null;
+};
+
+export const demoLeaveTypes: DemoLeaveType[] = [
+  { id: "lt-annual", company_id: DEMO_COMPANY_ID, code: "ANNUAL", name: "Phép năm", paid: true, default_quota_days: 12, carry_over_max_days: 5, requires_attachment: false, description: "12 ngày/năm + 1 ngày sau mỗi 5 năm thâm niên", active: true },
+  { id: "lt-sick", company_id: DEMO_COMPANY_ID, code: "SICK", name: "Nghỉ ốm", paid: true, default_quota_days: null, carry_over_max_days: 0, requires_attachment: true, description: "BHXH chi trả khi có giấy nghỉ", active: true },
+  { id: "lt-maternity", company_id: DEMO_COMPANY_ID, code: "MATERNITY", name: "Nghỉ thai sản", paid: true, default_quota_days: 180, carry_over_max_days: 0, requires_attachment: true, description: "6 tháng cho nữ, 5-14 ngày cho nam", active: true },
+  { id: "lt-marriage", company_id: DEMO_COMPANY_ID, code: "MARRIAGE", name: "Nghỉ kết hôn", paid: true, default_quota_days: 3, carry_over_max_days: 0, requires_attachment: false, description: "3 ngày", active: true },
+  { id: "lt-bereavement", company_id: DEMO_COMPANY_ID, code: "BEREAVEMENT", name: "Nghỉ hiếu", paid: true, default_quota_days: 3, carry_over_max_days: 0, requires_attachment: false, description: "3 ngày khi tứ thân phụ mẫu, vợ/chồng, con qua đời", active: true },
+  { id: "lt-unpaid", company_id: DEMO_COMPANY_ID, code: "UNPAID", name: "Nghỉ không lương", paid: false, default_quota_days: null, carry_over_max_days: 0, requires_attachment: false, description: "Theo thỏa thuận với công ty", active: true },
+  { id: "lt-comp", company_id: DEMO_COMPANY_ID, code: "COMP", name: "Nghỉ bù", paid: true, default_quota_days: null, carry_over_max_days: 0, requires_attachment: false, description: "Bù sau OT hoặc làm cuối tuần", active: true },
+];
+
+export const demoLeaveBalances: DemoLeaveBalance[] = [
+  { id: "lb-e1-annual", company_id: DEMO_COMPANY_ID, employee_id: "e1", leave_type_id: "lt-annual", year: 2026, entitled_days: 12, carried_over_days: 3, used_days: 4, pending_days: 1, adjustment_days: 0 },
+  { id: "lb-e1-sick", company_id: DEMO_COMPANY_ID, employee_id: "e1", leave_type_id: "lt-sick", year: 2026, entitled_days: 0, carried_over_days: 0, used_days: 1, pending_days: 0, adjustment_days: 0 },
+  { id: "lb-e1-comp", company_id: DEMO_COMPANY_ID, employee_id: "e1", leave_type_id: "lt-comp", year: 2026, entitled_days: 2, carried_over_days: 0, used_days: 0, pending_days: 0, adjustment_days: 0 },
+];
+
+function dateOffsetDays(days: number): string {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
+export const demoLeaveRequests: DemoLeaveRequest[] = [
+  { id: "lr-1", company_id: DEMO_COMPANY_ID, employee_id: "e8", leave_type_id: "lt-annual", starts_on: dateOffsetDays(3), ends_on: dateOffsetDays(4), half_day_start: false, half_day_end: false, total_days: 2, reason: "Việc gia đình", handover_to: "e9", status: "pending", decided_by: null, decided_at: null, decision_note: null, created_at: new Date(Date.now() - 86_400_000).toISOString() },
+  { id: "lr-2", company_id: DEMO_COMPANY_ID, employee_id: "e10", leave_type_id: "lt-sick", starts_on: dateOffsetDays(-1), ends_on: dateOffsetDays(-1), half_day_start: false, half_day_end: false, total_days: 1, reason: "Sốt cao", handover_to: null, status: "approved", decided_by: "e5", decided_at: new Date(Date.now() - 86_400_000).toISOString(), decision_note: "OK", created_at: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+  { id: "lr-3", company_id: DEMO_COMPANY_ID, employee_id: "e1", leave_type_id: "lt-annual", starts_on: dateOffsetDays(7), ends_on: dateOffsetDays(7), half_day_start: false, half_day_end: false, total_days: 1, reason: "Du lịch", handover_to: "e2", status: "pending", decided_by: null, decided_at: null, decision_note: null, created_at: new Date().toISOString() },
+  { id: "lr-4", company_id: DEMO_COMPANY_ID, employee_id: "e1", leave_type_id: "lt-annual", starts_on: dateOffsetDays(-14), ends_on: dateOffsetDays(-12), half_day_start: false, half_day_end: false, total_days: 3, reason: "Về quê", handover_to: "e2", status: "approved", decided_by: "e2", decided_at: new Date(Date.now() - 15 * 86_400_000).toISOString(), decision_note: null, created_at: new Date(Date.now() - 16 * 86_400_000).toISOString() },
+  { id: "lr-5", company_id: DEMO_COMPANY_ID, employee_id: "e11", leave_type_id: "lt-annual", starts_on: dateOffsetDays(5), ends_on: dateOffsetDays(5), half_day_start: false, half_day_end: false, total_days: 1, reason: "Đi khám", handover_to: null, status: "approved", decided_by: "e5", decided_at: new Date().toISOString(), decision_note: null, created_at: new Date(Date.now() - 86_400_000).toISOString() },
+];
+
+export const demoHolidaysVN: DemoHoliday[] = [
+  { id: "h1", company_id: null, name: "Tết Dương lịch", holiday_date: "2026-01-01", is_paid: true, is_substitute: false, notes: null },
+  { id: "h2", company_id: null, name: "Tết Nguyên đán", holiday_date: "2026-02-16", is_paid: true, is_substitute: false, notes: "Mùng 1 Tết Bính Ngọ" },
+  { id: "h3", company_id: null, name: "Tết Nguyên đán", holiday_date: "2026-02-17", is_paid: true, is_substitute: false, notes: "Mùng 2 Tết" },
+  { id: "h4", company_id: null, name: "Tết Nguyên đán", holiday_date: "2026-02-18", is_paid: true, is_substitute: false, notes: "Mùng 3 Tết" },
+  { id: "h5", company_id: null, name: "Tết Nguyên đán", holiday_date: "2026-02-19", is_paid: true, is_substitute: false, notes: "Mùng 4 Tết" },
+  { id: "h6", company_id: null, name: "Tết Nguyên đán", holiday_date: "2026-02-20", is_paid: true, is_substitute: false, notes: "Mùng 5 Tết" },
+  { id: "h7", company_id: null, name: "Giỗ Tổ Hùng Vương", holiday_date: "2026-04-26", is_paid: true, is_substitute: false, notes: "10/3 ÂL" },
+  { id: "h8", company_id: null, name: "Giải phóng miền Nam", holiday_date: "2026-04-30", is_paid: true, is_substitute: false, notes: null },
+  { id: "h9", company_id: null, name: "Quốc tế Lao động", holiday_date: "2026-05-01", is_paid: true, is_substitute: false, notes: null },
+  { id: "h10", company_id: null, name: "Quốc khánh", holiday_date: "2026-09-02", is_paid: true, is_substitute: false, notes: null },
+  { id: "h11", company_id: null, name: "Quốc khánh (nghỉ liền kề)", holiday_date: "2026-09-01", is_paid: true, is_substitute: false, notes: "Theo Bộ luật LĐ 2019" },
+];
+
 export const demoRevenueTrend = [
   { label: "T5/25", value: 3_200_000_000 },
   { label: "T6/25", value: 3_400_000_000 },

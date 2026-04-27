@@ -8,7 +8,7 @@
 
 -- 1. Company
 insert into companies (id, name, code)
-values ('00000000-0000-0000-0000-00000000c001', 'BIZOS Demo', 'BIZOS')
+values ('00000000-0000-0000-0000-00000000c001', 'BIZOS Demo', 'BIZOS_DEMO')
 on conflict (id) do nothing;
 
 -- 2. Departments

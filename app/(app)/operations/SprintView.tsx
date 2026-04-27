@@ -8,7 +8,8 @@ import { SprintKanban } from "./SprintKanban";
 import { SprintHistoryModal } from "./SprintHistoryModal";
 import { SprintAnalyticsModal } from "./SprintAnalyticsModal";
 import { MultiSelect } from "./MultiSelect";
-import { X, Search, AlertTriangle } from "lucide-react";
+import { QuickCreateTaskDialog } from "./QuickCreateTaskDialog";
+import { Plus, X, Search, AlertTriangle } from "lucide-react";
 
 type SprintFilters = {
   search: string;
@@ -66,11 +67,19 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
   const activeSprint = sprints.find((s) => s.status === "active") || null;
   const planningSprint = sprints.find((s) => s.status === "planning") || null;
   const currentSprint = activeSprint || planningSprint;
+  const completedSprints = [...sprints]
+    .filter((s) => s.status === "completed")
+    .sort((a, b) =>
+      (b.completed_at ?? b.end_date ?? b.created_at).localeCompare(
+        a.completed_at ?? a.end_date ?? a.created_at,
+      ),
+    );
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showCompleteModal, setShowCompleteModal] = useState(false);
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [showAnalyticsModal, setShowAnalyticsModal] = useState(false);
+  const [quickCreateMode, setQuickCreateMode] = useState<"normal" | "urgent" | null>(null);
   const [storyPointsTaskId, setStoryPointsTaskId] = useState<string | null>(null);
   const [activeView, setActiveView] = useState<"planning" | "kanban">(activeSprint ? "kanban" : "planning");
   const [filters, setFilters] = useState<SprintFilters>(EMPTY_SPRINT_FILTERS);
@@ -80,6 +89,18 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
   const sprintTasksAll = currentSprint ? tasks.filter((t) => t.sprint_id === currentSprint.id) : [];
   const backlogTasks = applySprintFilters(backlogAll, filters);
   const sprintTasks = applySprintFilters(sprintTasksAll, filters);
+  const averageVelocity =
+    completedSprints.length > 0
+      ? completedSprints.reduce((sum, sprint) => sum + (sprint.velocity ?? 0), 0) / completedSprints.length
+      : 0;
+  const averageCompletion =
+    completedSprints.length > 0
+      ? completedSprints.reduce((sum, sprint) => sum + (sprint.completion_rate ?? 0), 0) / completedSprints.length
+      : 0;
+  const totalCompletedPoints = completedSprints.reduce(
+    (sum, sprint) => sum + (sprint.completed_points ?? 0),
+    0,
+  );
 
   const filterChips: { key: string; label: string; onRemove: () => void }[] = [];
   filters.priority.forEach((v) => filterChips.push({
@@ -137,9 +158,17 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
             <h2 className="text-lg font-bold text-slate-800">🏃 Sprint Management</h2>
             <p className="text-sm text-slate-500">Quản lý công việc theo Agile Scrum</p>
           </div>
-          <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md">
-            ➕ Tạo Sprint mới
-          </button>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={() => setShowAnalyticsModal(true)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all">
+              📊 Analytics
+            </button>
+            <button onClick={() => setShowHistoryModal(true)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 transition-all">
+              📚 Lịch sử
+            </button>
+            <button onClick={() => setShowCreateModal(true)} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all shadow-md">
+              ➕ Tạo Sprint mới
+            </button>
+          </div>
         </div>
         <div className="text-center py-16 bg-white/60 rounded-2xl border border-dashed border-slate-300">
           <div className="text-5xl mb-4">🏃</div>
@@ -149,7 +178,19 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
             ➕ Tạo Sprint đầu tiên
           </button>
         </div>
+        <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+          <SprintHistoryPreview completedSprints={completedSprints} onOpen={() => setShowHistoryModal(true)} />
+          <SprintAnalyticsPreview
+            completedCount={completedSprints.length}
+            averageVelocity={averageVelocity}
+            averageCompletion={averageCompletion}
+            totalCompletedPoints={totalCompletedPoints}
+            onOpen={() => setShowAnalyticsModal(true)}
+          />
+        </div>
         {showCreateModal && <CreateSprintModal onClose={() => setShowCreateModal(false)} sprints={sprints} />}
+        {showHistoryModal && <SprintHistoryModal sprints={sprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
+        {showAnalyticsModal && <SprintAnalyticsModal sprints={sprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
       </div>
     );
   }
@@ -180,6 +221,20 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
+            <button
+              onClick={() => setQuickCreateMode("normal")}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold bg-indigo-100 text-indigo-700 hover:bg-indigo-200 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm task
+            </button>
+            <button
+              onClick={() => setQuickCreateMode("urgent")}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold bg-red-100 text-red-700 hover:bg-red-200 transition-all"
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Khẩn cấp
+            </button>
             <button onClick={() => setShowAnalyticsModal(true)} className="px-3 py-2 rounded-lg text-sm font-semibold bg-purple-100 text-purple-700 hover:bg-purple-200 transition-all">
               📊 Analytics
             </button>
@@ -335,29 +390,16 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
       </div>
       )}
 
-      {/* Sprint History inline preview */}
-      {sprints.filter((s) => s.status === "completed").length > 0 && (
-        <div className="bg-white/80 rounded-2xl p-4 border border-slate-200/60 shadow-sm">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-semibold text-slate-700">📚 Sprint gần đây</h3>
-            <button onClick={() => setShowHistoryModal(true)} className="text-xs text-indigo-600 hover:underline">Xem tất cả →</button>
-          </div>
-          <div className="space-y-2">
-            {sprints.filter((s) => s.status === "completed").slice(-3).reverse().map((s) => (
-              <div key={s.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
-                <div>
-                  <span className="font-medium text-sm text-slate-700">{s.name}</span>
-                  <span className="text-xs text-slate-500 ml-2">{s.start_date} → {s.end_date}</span>
-                </div>
-                <div className="flex gap-3 text-xs text-slate-600">
-                  <span>Velocity: <strong>{s.velocity ?? "—"}</strong></span>
-                  <span>Rate: <strong>{s.completion_rate ? `${s.completion_rate}%` : "—"}</strong></span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="grid grid-cols-1 xl:grid-cols-[1.2fr_0.8fr] gap-4">
+        <SprintHistoryPreview completedSprints={completedSprints} onOpen={() => setShowHistoryModal(true)} />
+        <SprintAnalyticsPreview
+          completedCount={completedSprints.length}
+          averageVelocity={averageVelocity}
+          averageCompletion={averageCompletion}
+          totalCompletedPoints={totalCompletedPoints}
+          onOpen={() => setShowAnalyticsModal(true)}
+        />
+      </div>
 
       {/* Modals */}
       {showCreateModal && <CreateSprintModal onClose={() => setShowCreateModal(false)} sprints={sprints} />}
@@ -365,6 +407,19 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
       {showHistoryModal && <SprintHistoryModal sprints={sprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
       {showAnalyticsModal && <SprintAnalyticsModal sprints={sprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
       {storyPointsTaskId && <StoryPointsModal taskId={storyPointsTaskId} task={tasks.find((t) => t.id === storyPointsTaskId)!} onSelect={handleSetStoryPoints} onClose={() => setStoryPointsTaskId(null)} />}
+      {quickCreateMode && (
+        <QuickCreateTaskDialog
+          sprintId={currentSprint.id}
+          sprintName={currentSprint.name}
+          employees={employees}
+          onClose={() => setQuickCreateMode(null)}
+          defaults={
+            quickCreateMode === "urgent"
+              ? { priority: "urgent", taskType: "urgent", urgent: true }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }
@@ -411,6 +466,95 @@ function SprintTaskCard({ task, employees, onRemove, onSetPoints, onOpen, isPend
       <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity" onClick={(e) => e.stopPropagation()}>
         <button onClick={onSetPoints} className="p-1.5 rounded bg-slate-200 hover:bg-slate-300 text-xs">✏️</button>
         <button onClick={onRemove} disabled={isPending} className="p-1.5 rounded bg-red-500 hover:bg-red-600 text-white text-xs" title="Xóa khỏi Sprint">←</button>
+      </div>
+    </div>
+  );
+}
+
+function SprintHistoryPreview({
+  completedSprints,
+  onOpen,
+}: {
+  completedSprints: Sprint[];
+  onOpen: () => void;
+}) {
+  return (
+    <div className="bg-white/80 rounded-2xl p-4 border border-slate-200/60 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-slate-700">📚 Sprint gần đây</h3>
+        <button onClick={onOpen} className="text-xs text-indigo-600 hover:underline">
+          Xem tất cả →
+        </button>
+      </div>
+      {completedSprints.length === 0 ? (
+        <div className="rounded-xl border border-dashed border-slate-200 bg-slate-50 px-4 py-8 text-center text-sm text-slate-400">
+          Chưa có sprint hoàn thành nào, nhưng khu vực lịch sử đã sẵn sàng.
+        </div>
+      ) : (
+        <div className="space-y-2">
+          {completedSprints.slice(0, 3).map((sprint) => (
+            <div key={sprint.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+              <div>
+                <span className="font-medium text-sm text-slate-700">{sprint.name}</span>
+                <span className="text-xs text-slate-500 ml-2">
+                  {sprint.start_date} → {sprint.end_date}
+                </span>
+              </div>
+              <div className="flex gap-3 text-xs text-slate-600">
+                <span>
+                  Velocity: <strong>{sprint.velocity ?? "—"}</strong>
+                </span>
+                <span>
+                  Rate: <strong>{sprint.completion_rate ? `${sprint.completion_rate}%` : "—"}</strong>
+                </span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SprintAnalyticsPreview({
+  completedCount,
+  averageVelocity,
+  averageCompletion,
+  totalCompletedPoints,
+  onOpen,
+}: {
+  completedCount: number;
+  averageVelocity: number;
+  averageCompletion: number;
+  totalCompletedPoints: number;
+  onOpen: () => void;
+}) {
+  return (
+    <div className="bg-white/80 rounded-2xl p-4 border border-slate-200/60 shadow-sm">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="font-semibold text-slate-700">📊 Sprint analytics</h3>
+        <button onClick={onOpen} className="text-xs text-indigo-600 hover:underline">
+          Mở phân tích →
+        </button>
+      </div>
+      <div className="grid grid-cols-3 gap-2 mb-3">
+        <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-3 text-center">
+          <div className="text-lg font-bold text-indigo-700">{completedCount}</div>
+          <div className="text-[11px] text-slate-500">Sprint done</div>
+        </div>
+        <div className="rounded-xl bg-emerald-50 border border-emerald-100 p-3 text-center">
+          <div className="text-lg font-bold text-emerald-700">{averageVelocity.toFixed(1)}</div>
+          <div className="text-[11px] text-slate-500">Avg velocity</div>
+        </div>
+        <div className="rounded-xl bg-cyan-50 border border-cyan-100 p-3 text-center">
+          <div className="text-lg font-bold text-cyan-700">{averageCompletion.toFixed(1)}%</div>
+          <div className="text-[11px] text-slate-500">Avg completion</div>
+        </div>
+      </div>
+      <div className="rounded-xl bg-slate-50 border border-slate-200 px-3 py-2 text-xs text-slate-600">
+        {completedCount === 0
+          ? "Phần phân tích đang hiện sẵn. Khi có sprint hoàn thành, biểu đồ velocity và burndown sẽ có dữ liệu."
+          : `Đã hoàn thành tổng ${totalCompletedPoints} story points qua ${completedCount} sprint.`}
       </div>
     </div>
   );

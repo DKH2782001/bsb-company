@@ -152,3 +152,101 @@ export const accountingEntryUpsertSchema = z
   });
 export type AccountingEntryUpsertInput = z.input<typeof accountingEntryUpsertSchema>;
 export type AccountingEntryUpsertOutput = z.output<typeof accountingEntryUpsertSchema>;
+
+export const contractTypeEnum = z.enum([
+  "probation",
+  "fixed_term",
+  "indefinite",
+  "internship",
+  "collaborator",
+]);
+
+export const contractStatusEnum = z.enum([
+  "draft",
+  "active",
+  "expiring_soon",
+  "expired",
+  "terminated",
+  "renewed",
+]);
+
+export const contractUpsertSchema = z.object({
+  id: optionalString,
+  employeeId: requiredText("Nhân sự", 1, 80),
+  code: optionalString,
+  contractType: contractTypeEnum,
+  status: contractStatusEnum,
+  startsAt: requiredText("Ngày hiệu lực", 8, 30),
+  endsAt: optionalString,
+  probationEndsAt: optionalString,
+  signedAt: optionalString,
+  baseSalary: nonNegative("Lương cơ bản"),
+  currency: requiredText("Tiền tệ", 1, 10),
+  noticePeriodDays: z.number({ message: "Notice period phải là số" }).int("Notice period phải là số nguyên").min(0),
+  workingHoursPerWeek: nonNegative("Giờ làm việc/tuần"),
+  documentUrl: optionalString,
+  notes: optionalString,
+});
+export type ContractUpsertInput = z.input<typeof contractUpsertSchema>;
+export type ContractUpsertOutput = z.output<typeof contractUpsertSchema>;
+
+export const contractAmendmentUpsertSchema = z.object({
+  contractId: requiredText("Hợp đồng", 1, 80),
+  effectiveFrom: requiredText("Ngày hiệu lực", 8, 30),
+  summary: requiredText("Nội dung thay đổi", 2, 500),
+  reason: optionalString,
+  documentUrl: optionalString,
+  signedAt: optionalString,
+});
+export type ContractAmendmentUpsertInput = z.input<typeof contractAmendmentUpsertSchema>;
+export type ContractAmendmentUpsertOutput = z.output<typeof contractAmendmentUpsertSchema>;
+
+export const employeeDocumentCreateSchema = z.object({
+  employeeId: requiredText("Nhân sự", 1, 80),
+  docType: requiredText("Loại hồ sơ", 1, 60),
+  label: requiredText("Tên hồ sơ", 2, 120),
+  storagePath: requiredText("File", 2, 500),
+  mimeType: optionalString,
+  sizeBytes: nonNegative("Kích thước"),
+  expiresOn: optionalString,
+});
+export type EmployeeDocumentCreateInput = z.input<typeof employeeDocumentCreateSchema>;
+export type EmployeeDocumentCreateOutput = z.output<typeof employeeDocumentCreateSchema>;
+
+export const employeeDependentUpsertSchema = z.object({
+  id: optionalString,
+  employeeId: requiredText("Nhân sự", 1, 80),
+  fullName: requiredText("Họ tên", 2, 120),
+  relationship: requiredText("Quan hệ", 1, 60),
+  dateOfBirth: optionalString,
+  nationalId: optionalString,
+  taxCode: optionalString,
+  startsOn: optionalString,
+  endsOn: optionalString,
+  notes: optionalString,
+});
+export type EmployeeDependentUpsertInput = z.input<typeof employeeDependentUpsertSchema>;
+export type EmployeeDependentUpsertOutput = z.output<typeof employeeDependentUpsertSchema>;
+
+export const onboardingKindEnum = z.enum(["onboarding", "offboarding"]);
+export const onboardingRunStatusEnum = z.enum(["not_started", "in_progress", "completed", "cancelled"]);
+export const onboardingTaskStatusEnum = z.enum(["pending", "in_progress", "completed", "skipped", "overdue"]);
+
+export const onboardingRunCreateSchema = z.object({
+  templateId: requiredText("Template", 1, 80),
+  employeeId: requiredText("Nhân sự", 1, 80),
+  kind: onboardingKindEnum,
+  startedOn: requiredText("Ngày bắt đầu", 8, 30),
+  targetDoneOn: optionalString,
+  notes: optionalString,
+});
+export type OnboardingRunCreateInput = z.input<typeof onboardingRunCreateSchema>;
+export type OnboardingRunCreateOutput = z.output<typeof onboardingRunCreateSchema>;
+
+export const onboardingTaskUpdateSchema = z.object({
+  taskId: requiredText("Task", 1, 80),
+  status: onboardingTaskStatusEnum,
+  notes: optionalString,
+});
+export type OnboardingTaskUpdateInput = z.input<typeof onboardingTaskUpdateSchema>;
+export type OnboardingTaskUpdateOutput = z.output<typeof onboardingTaskUpdateSchema>;

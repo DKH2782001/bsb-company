@@ -103,6 +103,7 @@ export async function recordKpiActualAction(formData: FormData) {
 }
 
 export async function createTaskAction(formData: FormData) {
+  const storyPointsRaw = formData.get("storyPoints");
   await createTask({
     title: String(formData.get("title") ?? ""),
     assigneeId: String(formData.get("assigneeId") ?? ""),
@@ -111,6 +112,8 @@ export async function createTaskAction(formData: FormData) {
     dueDate: String(formData.get("dueDate") ?? ""),
     priority: String(formData.get("priority") ?? "normal") as "low" | "normal" | "high" | "urgent",
     taskType: String(formData.get("taskType") ?? "growth") as "growth" | "maintenance" | "admin" | "urgent",
+    sprintId: String(formData.get("sprintId") ?? "") || undefined,
+    storyPoints: storyPointsRaw && String(storyPointsRaw) !== "" ? Number(storyPointsRaw) : undefined,
   });
   revalidatePath("/operations");
 }

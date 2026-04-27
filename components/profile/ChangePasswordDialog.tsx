@@ -2,11 +2,11 @@
 
 import { useState, useTransition } from "react";
 import { KeyRound, Eye, EyeOff } from "lucide-react";
+import { changePasswordAction } from "@/app/(app)/profile/actions";
 import { Dialog } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/toast";
-import { createClient } from "@/lib/supabase/client";
 
 export function ChangePasswordDialog({
   hasSupabaseEnv,
@@ -55,25 +55,27 @@ export function ChangePasswordDialog({
       return;
     }
 
-    if (!hasSupabaseEnv) {
-      toast({ variant: "success", title: "Đã cập nhật mật khẩu", description: "(Demo mode)" });
-      handleClose();
-      return;
-    }
-
     startTransition(async () => {
       try {
-        const supabase = createClient();
-        const { error: updateError } = await supabase.auth.updateUser({
-          password: newPassword,
-        });
+        const formData = new FormData();
+        formData.set("currentPassword", currentPassword);
+        formData.set("newPassword", newPassword);
+        formData.set("confirmPassword", confirmPassword);
 
-        if (updateError) {
-          setError(updateError.message);
+        const result = await changePasswordAction(formData);
+
+        if (!result.ok) {
+          setError(result.error);
           return;
         }
 
-        toast({ variant: "success", title: "Đã cập nhật mật khẩu", description: "Mật khẩu của bạn đã được thay đổi thành công." });
+        toast({
+          variant: "success",
+          title: "Đã cập nhật mật khẩu",
+          description: hasSupabaseEnv
+            ? "Đã đăng xuất các phiên khác để đảm bảo an toàn."
+            : "(Demo mode)",
+        });
         handleClose();
       } catch (err) {
         setError(err instanceof Error ? err.message : "Có lỗi xảy ra.");
