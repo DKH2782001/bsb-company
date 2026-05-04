@@ -59,6 +59,7 @@ export const DICT: Dict = {
   "nav.guide": { vi: "Hướng dẫn", en: "Guide" },
   "nav.attendance": { vi: "Chấm công", en: "Attendance" },
   "nav.attendanceSettings": { vi: "Cấu hình chấm công", en: "Attendance settings" },
+  "nav.scheduling": { vi: "Xếp lịch ca", en: "Scheduling" },
   "nav.leave": { vi: "Nghỉ phép", en: "Leave" },
 
   // Common labels
@@ -235,6 +236,7 @@ export const DICT: Dict = {
   "finance.tabs.bs": { vi: "Balance Sheet", en: "Balance Sheet" },
   "finance.tabs.cf": { vi: "Cash Flow", en: "Cash Flow" },
   "finance.tabs.budget": { vi: "Budget vs Actual", en: "Budget vs Actual" },
+  "finance.tabs.departments": { vi: "P&L Phòng ban", en: "Dept P&L" },
   "finance.kpi.revenue": { vi: "Doanh thu", en: "Revenue" },
   "finance.kpi.gp": { vi: "Gross Profit", en: "Gross profit" },
   "finance.kpi.np": { vi: "Net Profit", en: "Net profit" },

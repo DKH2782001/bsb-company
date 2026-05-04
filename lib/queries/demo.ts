@@ -21,6 +21,7 @@ import type {
   JobRequisition,
   SopDocument,
   AuditLog,
+  TaskComment,
 } from "@/types/domain";
 import { formatLocalISODate } from "@/lib/utils";
 
@@ -156,6 +157,7 @@ function mkTask(
   due = "2026-04-30",
   sprintId: string | null = null,
   storyPoints: number | null = null,
+  start: string | null = null,
 ): Task {
   return {
     id,
@@ -170,6 +172,7 @@ function mkTask(
     priority,
     task_type: taskType,
     status,
+    start_date: start,
     due_date: due,
     estimated_hours: 4,
     actual_hours: null,
@@ -180,13 +183,13 @@ function mkTask(
 }
 
 export const demoTasks: Task[] = [
-  mkTask("t1", "Chốt 10 đơn sales tuần này", "e8", "d001", "k101", "in_progress", "high", "growth", "2026-04-30", "sp1", 5),
-  mkTask("t2", "Gọi 50 leads warm", "e9", "d001", "k102", "todo", "high", "growth", "2026-04-30", "sp1", 3),
-  mkTask("t3", "Đăng 15 bài content TikTok", "e10", "d002", "k201", "in_progress", "normal", "growth", "2026-04-30", "sp1", 8),
-  mkTask("t4", "Tối ưu ads campaign Q2", "e11", "d002", "k202", "todo", "high", "growth", "2026-04-30", "sp1", 5),
-  mkTask("t5", "Review SLA vận hành tháng", "e6", "d003", "k30", "review", "normal", "growth", "2026-04-30", "sp1", 3),
-  mkTask("t6", "Khảo sát CSAT tháng 4", "e13", "d004", "k40", "in_progress", "normal", "growth", "2026-04-28", "sp1", 2),
-  mkTask("t7", "Đăng tin tuyển 3 vị trí mới", "e14", "d005", null, "done", "normal", "admin", "2026-04-20", "sp1", 2),
+  mkTask("t1", "Chốt 10 đơn sales tuần này", "e8", "d001", "k101", "in_progress", "high", "growth", "2026-05-10", "sp1", 5, "2026-04-28"),
+  mkTask("t2", "Gọi 50 leads warm", "e9", "d001", "k102", "todo", "high", "growth", "2026-05-15", "sp1", 3, "2026-05-05"),
+  mkTask("t3", "Đăng 15 bài content TikTok", "e10", "d002", "k201", "in_progress", "normal", "growth", "2026-05-20", "sp1", 8, "2026-04-25"),
+  mkTask("t4", "Tối ưu ads campaign Q2", "e11", "d002", "k202", "todo", "high", "growth", "2026-05-30", "sp1", 5, "2026-05-10"),
+  mkTask("t5", "Review SLA vận hành tháng", "e6", "d003", "k30", "review", "normal", "growth", "2026-05-08", "sp1", 3, "2026-05-01"),
+  mkTask("t6", "Khảo sát CSAT tháng 4", "e13", "d004", "k40", "in_progress", "normal", "growth", "2026-05-12", "sp1", 2, "2026-04-28"),
+  mkTask("t7", "Đăng tin tuyển 3 vị trí mới", "e14", "d005", null, "done", "normal", "admin", "2026-04-30", "sp1", 2, "2026-04-20"),
   mkTask("t8", "Chạy payroll tháng 4", "e2", "d005", null, "todo", "urgent", "admin", "2026-04-25"),
   mkTask("t9", "Tổng hợp báo cáo tài chính Q1", "e3", "d006", null, "review", "high"),
   mkTask("t10", "Thiết kế landing page mới", "e10", "d002", "k201", "blocked"),
@@ -195,6 +198,12 @@ export const demoTasks: Task[] = [
 ];
 
 export const demoTaskResults: TaskResult[] = [];
+
+export const demoTaskComments: TaskComment[] = [
+  { id: "cmt1", task_id: "t1", author_id: "e1", content: "Team Sales cần đẩy thêm 3 đơn nữa để về đích tuần này.", created_at: "2026-04-28T09:00:00Z" },
+  { id: "cmt2", task_id: "t1", author_id: "e8", content: "Đang chờ khách xác nhận 2 đơn, dự kiến chốt chiều nay.", created_at: "2026-04-28T10:30:00Z" },
+  { id: "cmt3", task_id: "t3", author_id: "e5", content: "Brief content đã gửi qua Drive, bạn check nhé.", created_at: "2026-04-27T14:00:00Z" },
+];
 
 export const demoSprints: Sprint[] = [
   {
@@ -581,6 +590,233 @@ export const demoHolidaysVN: DemoHoliday[] = [
   { id: "h9", company_id: null, name: "Quốc tế Lao động", holiday_date: "2026-05-01", is_paid: true, is_substitute: false, notes: null },
   { id: "h10", company_id: null, name: "Quốc khánh", holiday_date: "2026-09-02", is_paid: true, is_substitute: false, notes: null },
   { id: "h11", company_id: null, name: "Quốc khánh (nghỉ liền kề)", holiday_date: "2026-09-01", is_paid: true, is_substitute: false, notes: "Theo Bộ luật LĐ 2019" },
+];
+
+// ============================================================
+// SCHEDULING / ROSTERING demo data
+// ============================================================
+
+export type DemoShiftTemplate = {
+  id: string;
+  company_id: string;
+  code: string;
+  name: string;
+  start_time: string;
+  end_time: string;
+  break_minutes: number;
+  is_overnight: boolean;
+  role_required: string | null;
+  min_staff: number;
+  max_staff: number | null;
+  hourly_rate_multiplier: number;
+  night_multiplier: number;
+  weekend_multiplier: number;
+  holiday_multiplier: number;
+  color: string;
+  active: boolean;
+};
+
+export type DemoSchedulePeriod = {
+  id: string;
+  company_id: string;
+  week_start: string;
+  week_end: string;
+  status: "draft" | "published" | "locked";
+  published_at: string | null;
+  notes: string | null;
+};
+
+export type DemoScheduledShift = {
+  id: string;
+  company_id: string;
+  period_id: string;
+  shift_template_id: string;
+  employee_id: string;
+  shift_date: string;
+  status: "scheduled" | "confirmed" | "no_show" | "cancelled";
+  override_start: string | null;
+  override_end: string | null;
+  note: string | null;
+};
+
+export type DemoShiftSwapRequest = {
+  id: string;
+  company_id: string;
+  request_type: "drop" | "swap";
+  requester_shift_id: string;
+  receiver_shift_id: string | null;
+  receiver_id: string | null;
+  reason: string | null;
+  status: "pending" | "approved" | "rejected" | "cancelled";
+  decided_by: string | null;
+  decided_at: string | null;
+  decision_note: string | null;
+  created_at: string;
+};
+
+export const demoShiftTemplates: DemoShiftTemplate[] = [
+  {
+    id: "sht-morning",
+    company_id: DEMO_COMPANY_ID,
+    code: "MORNING",
+    name: "Ca Sáng",
+    start_time: "07:00",
+    end_time: "14:00",
+    break_minutes: 30,
+    is_overnight: false,
+    role_required: null,
+    min_staff: 2,
+    max_staff: 5,
+    hourly_rate_multiplier: 1.0,
+    night_multiplier: 1.3,
+    weekend_multiplier: 2.0,
+    holiday_multiplier: 3.0,
+    color: "#F59E0B",
+    active: true,
+  },
+  {
+    id: "sht-afternoon",
+    company_id: DEMO_COMPANY_ID,
+    code: "AFTERNOON",
+    name: "Ca Chiều",
+    start_time: "14:00",
+    end_time: "22:00",
+    break_minutes: 30,
+    is_overnight: false,
+    role_required: null,
+    min_staff: 2,
+    max_staff: 4,
+    hourly_rate_multiplier: 1.0,
+    night_multiplier: 1.3,
+    weekend_multiplier: 2.0,
+    holiday_multiplier: 3.0,
+    color: "#6D5EF7",
+    active: true,
+  },
+  {
+    id: "sht-night",
+    company_id: DEMO_COMPANY_ID,
+    code: "NIGHT",
+    name: "Ca Đêm",
+    start_time: "22:00",
+    end_time: "06:00",
+    break_minutes: 60,
+    is_overnight: true,
+    role_required: null,
+    min_staff: 1,
+    max_staff: 3,
+    hourly_rate_multiplier: 1.3,
+    night_multiplier: 1.3,
+    weekend_multiplier: 2.0,
+    holiday_multiplier: 3.0,
+    color: "#1E2458",
+    active: true,
+  },
+  {
+    id: "sht-office",
+    company_id: DEMO_COMPANY_ID,
+    code: "OFFICE",
+    name: "Ca Hành chính",
+    start_time: "08:30",
+    end_time: "17:30",
+    break_minutes: 60,
+    is_overnight: false,
+    role_required: null,
+    min_staff: 1,
+    max_staff: null,
+    hourly_rate_multiplier: 1.0,
+    night_multiplier: 1.3,
+    weekend_multiplier: 2.0,
+    holiday_multiplier: 3.0,
+    color: "#10B981",
+    active: true,
+  },
+];
+
+function mondayOfCurrentWeek(): Date {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun
+  const diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function dateStr(base: Date, offsetDays: number): string {
+  const d = new Date(base);
+  d.setDate(d.getDate() + offsetDays);
+  return formatLocalISODate(d);
+}
+
+const _weekStart = mondayOfCurrentWeek();
+const _weekEnd   = new Date(_weekStart);
+_weekEnd.setDate(_weekEnd.getDate() + 6);
+
+export const demoSchedulePeriods: DemoSchedulePeriod[] = [
+  {
+    id: "sp-current",
+    company_id: DEMO_COMPANY_ID,
+    week_start: formatLocalISODate(_weekStart),
+    week_end: formatLocalISODate(_weekEnd),
+    status: "published",
+    published_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+    notes: null,
+  },
+];
+
+// Employees for demo: e1..e4 are part-time/office workers
+export const demoScheduledShifts: DemoScheduledShift[] = [
+  // Monday
+  { id: "ss-1",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e1",  shift_date: dateStr(_weekStart, 0), status: "confirmed", override_start: null, override_end: null, note: null },
+  { id: "ss-2",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e2",  shift_date: dateStr(_weekStart, 0), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-3",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e3",  shift_date: dateStr(_weekStart, 0), status: "scheduled", override_start: null, override_end: null, note: null },
+  // Tuesday
+  { id: "ss-4",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e2",  shift_date: dateStr(_weekStart, 1), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-5",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e4",  shift_date: dateStr(_weekStart, 1), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-6",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-night",     employee_id: "e1",  shift_date: dateStr(_weekStart, 1), status: "scheduled", override_start: null, override_end: null, note: null },
+  // Wednesday
+  { id: "ss-7",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e3",  shift_date: dateStr(_weekStart, 2), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-8",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e1",  shift_date: dateStr(_weekStart, 2), status: "scheduled", override_start: null, override_end: null, note: null },
+  // Thursday
+  { id: "ss-9",  company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e4",  shift_date: dateStr(_weekStart, 3), status: "no_show",   override_start: null, override_end: null, note: "Không liên lạc được" },
+  { id: "ss-10", company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e2",  shift_date: dateStr(_weekStart, 3), status: "scheduled", override_start: null, override_end: null, note: null },
+  // Friday
+  { id: "ss-11", company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e1",  shift_date: dateStr(_weekStart, 4), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-12", company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e3",  shift_date: dateStr(_weekStart, 4), status: "scheduled", override_start: null, override_end: null, note: null },
+  // Saturday
+  { id: "ss-13", company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-morning",   employee_id: "e2",  shift_date: dateStr(_weekStart, 5), status: "scheduled", override_start: null, override_end: null, note: null },
+  { id: "ss-14", company_id: DEMO_COMPANY_ID, period_id: "sp-current", shift_template_id: "sht-afternoon", employee_id: "e4",  shift_date: dateStr(_weekStart, 5), status: "scheduled", override_start: null, override_end: null, note: null },
+];
+
+export const demoShiftSwapRequests: DemoShiftSwapRequest[] = [
+  {
+    id: "sw-1",
+    company_id: DEMO_COMPANY_ID,
+    request_type: "drop",
+    requester_shift_id: "ss-6",
+    receiver_shift_id: null,
+    receiver_id: null,
+    reason: "Bận việc gia đình",
+    status: "pending",
+    decided_by: null,
+    decided_at: null,
+    decision_note: null,
+    created_at: new Date(Date.now() - 3_600_000).toISOString(),
+  },
+  {
+    id: "sw-2",
+    company_id: DEMO_COMPANY_ID,
+    request_type: "swap",
+    requester_shift_id: "ss-5",
+    receiver_shift_id: "ss-8",
+    receiver_id: "e1",
+    reason: "Muốn đổi sang ca chiều thứ tư",
+    status: "approved",
+    decided_by: "e2",
+    decided_at: new Date(Date.now() - 86_400_000).toISOString(),
+    decision_note: "OK",
+    created_at: new Date(Date.now() - 2 * 86_400_000).toISOString(),
+  },
 ];
 
 export const demoRevenueTrend = [
