@@ -1,7 +1,7 @@
 "use server";
 
 import { headers } from "next/headers";
-import { revalidatePath } from "next/cache";
+import { refresh, revalidatePath } from "next/cache";
 import { checkRateLimit } from "@/lib/auth/rate-limit";
 import {
   checkIn,
@@ -52,7 +52,10 @@ export async function checkInAction(formData: FormData): Promise<CheckInResult> 
     note: (formData.get("note")?.toString() ?? "").trim() || null,
   });
 
-  if (result.ok) revalidatePath("/attendance");
+  if (result.ok) {
+    revalidatePath("/attendance");
+    refresh();
+  }
   return result;
 }
 
@@ -70,7 +73,10 @@ export async function checkOutAction(formData: FormData): Promise<CheckOutResult
     note: (formData.get("note")?.toString() ?? "").trim() || null,
   });
 
-  if (result.ok) revalidatePath("/attendance");
+  if (result.ok) {
+    revalidatePath("/attendance");
+    refresh();
+  }
   return result;
 }
 

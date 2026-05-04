@@ -225,12 +225,12 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 >   - Migration `20260427170000_attendance_monthly_timesheets.sql`: thêm `attendance_monthly_periods`, `attendance_monthly_rows`, enum trạng thái + RLS/write policies cho CEO/HR Admin.
 >   - Repository [lib/repositories/attendance-timesheets.ts](lib/repositories/attendance-timesheets.ts): tổng hợp ngày làm, nghỉ lương, nghỉ không lương, OT, đi muộn, về sớm theo tháng; cho phép manual adjustment trước khi chốt payroll.
 >   - UI [/attendance/timesheets](app/(app)/attendance/timesheets/page.tsx): xem bảng công theo tháng, tổng hợp lại, chỉnh tay, khóa/mở khóa; trang [/attendance](app/(app)/attendance/page.tsx) có link nhanh sang bảng công tháng.
-> - [ ] Đợt 1G — Contract workspace & hồ sơ: form linh hoạt theo công ty + upload file + versioning + cảnh báo hết hạn
-> - [ ] Đợt 1H — Onboarding/Offboarding checklist + dashboard tracking + liên kết trạng thái hợp đồng
+> - [~] Đợt 1G — Contract workspace & hồ sơ: đã có workspace, upload hồ sơ, amendment/versioning, cảnh báo hết hạn; phần "form linh hoạt theo công ty" vẫn còn có thể mở rộng thêm
+> - [~] Đợt 1H — Onboarding/Offboarding checklist + dashboard tracking đã có; phần liên kết trạng thái hợp đồng hiện mới ở mức workflow mềm/chưa auto-sync rõ ràng
 > - [~] ~~Đợt 1I~~ — Google Calendar sync (hoãn — không bắt buộc)
 > - [~] ~~Đợt 1J~~ — Ký số hợp đồng VNPT-CA/FPT-CA (hoãn — không bắt buộc)
 
-#### 1.1. Chấm công (Time Tracking)
+#### 1.1. Chấm công (Time Tracking) — [x] Đã có bản web vận hành được
 
 **Tính năng:**
 - **Check-in / Check-out** từ web hoặc mobile (PWA)
@@ -257,7 +257,7 @@ overtime_requests        -- xin OT
 - Máy chấm công Ronald Jack, ZKTeco — pull data qua webhook hoặc polling
 - Excel/CSV import cho khách dùng máy chấm cũ
 
-#### 1.2. Nghỉ phép (Leave Management)
+#### 1.2. Nghỉ phép (Leave Management) — [x] Đã có bản vận hành được
 
 **Loại nghỉ phép theo luật VN:**
 - **Phép năm** (12 ngày + 1 ngày/5 năm thâm niên)
@@ -276,21 +276,21 @@ overtime_requests        -- xin OT
 - **Notification** auto cho manager khi có đơn mới
 - **Tích hợp Google Calendar / Outlook** đẩy event nghỉ phép
 
-#### 1.3. Lịch nghỉ lễ VN
+#### 1.3. Lịch nghỉ lễ VN — [~] Đã có CRUD + import preset, chưa auto nghỉ bù/loại trừ holiday khỏi phép
 
 - Pre-load 10 ngày lễ VN cho 5 năm tới
 - Tính cả nghỉ bù khi lễ rơi vào cuối tuần
 - Custom holiday cho công ty (nghỉ team building, nghỉ Tết dài hơn luật)
 - Tự động không trừ phép vào ngày lễ
 
-#### 1.4. Bảng công cuối tháng
+#### 1.4. Bảng công cuối tháng — [x] Đã có
 
 - Tổng hợp tự động: số ngày làm, số ngày nghỉ phép, số ngày nghỉ không lương, OT, đi muộn về sớm
 - Đẩy data trực tiếp vào module Payroll
 - HR có thể chỉnh sửa thủ công trước khi chốt
 - Lock bảng công sau khi chốt — chỉ admin được mở khóa
 
-#### 1.5. Contract Workspace & Hồ sơ
+#### 1.5. Contract Workspace & Hồ sơ — [~] Đã có phần lớn
 
 **Nguyên tắc scope:**
 - Không hard-code nội dung hợp đồng theo luật VN vào sản phẩm.
@@ -314,7 +314,7 @@ overtime_requests        -- xin OT
 - Hợp đồng/phụ lục đã ký (PDF/DOCX)
 - Người phụ thuộc (cho giảm trừ TNCN)
 
-#### 1.6. Onboarding / Offboarding
+#### 1.6. Onboarding / Offboarding — [~] Đã có checklist/dashboard, còn chỗ để siết integration
 
 **Nguyên tắc scope:**
 - `1H` chỉ quản lý **checklist, owner, deadline, trạng thái và dashboard tiến độ**.
@@ -1032,8 +1032,8 @@ Nếu bạn bắt đầu ngay tuần này, đây là việc cần làm:
 
 ### Tuần 2: Foundation
 
-- [ ] Implement đầy đủ CRUD cho Employee + Department (làm mẫu trước)
-- [ ] Setup Supabase Storage buckets + upload UI
+- [x] Implement đầy đủ CRUD cho Employee + Department (làm mẫu trước)
+- [x] Setup Supabase Storage buckets + upload UI
 - [ ] Setup Resend cho email transactional
 - [ ] Bật 2FA cho Supabase Auth
 - [ ] Audit responsive trên mobile, fix top 10 vấn đề
@@ -1042,8 +1042,8 @@ Nếu bạn bắt đầu ngay tuần này, đây là việc cần làm:
 
 - [ ] Phỏng vấn 5-10 SME (HR, CEO) về pain point chấm công/nghỉ phép
 - [ ] Wireframe module Attendance + Leave (Figma)
-- [ ] Schema migration cho 7 bảng chấm công (attendance_*, overtime_*)
-- [ ] Implement check-in/out cơ bản (web)
+- [x] Schema migration cho 7 bảng chấm công (attendance_*, overtime_*)
+- [x] Implement check-in/out cơ bản (web)
 - [ ] Demo cho 2-3 khách pilot tiềm năng
 
 ### Tài liệu cần soạn song song

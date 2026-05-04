@@ -22,6 +22,7 @@ import type {
   SopDocument,
   AuditLog,
 } from "@/types/domain";
+import { formatLocalISODate } from "@/lib/utils";
 
 export const DEMO_COMPANY_ID = "00000000-0000-0000-0000-00000000c001";
 
@@ -412,7 +413,7 @@ function isoOffsetDays(days: number, hour: number, minute: number): string {
 function dateOffset(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
-  return d.toISOString().slice(0, 10);
+  return formatLocalISODate(d);
 }
 
 export const demoMyAttendanceRecords: DemoAttendanceRecord[] = [
@@ -557,7 +558,7 @@ export const demoLeaveBalances: DemoLeaveBalance[] = [
 function dateOffsetDays(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
-  return d.toISOString().slice(0, 10);
+  return formatLocalISODate(d);
 }
 
 export const demoLeaveRequests: DemoLeaveRequest[] = [

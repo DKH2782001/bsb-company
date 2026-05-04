@@ -16,6 +16,7 @@ import {
   type DemoAttendanceRecord,
   type DemoAttendanceShift,
 } from "@/lib/queries/demo";
+import { formatLocalISODate } from "@/lib/utils";
 
 async function getEmployeeContext() {
   const user = await getAuthenticatedUser();
@@ -82,7 +83,7 @@ export type CheckOutResult =
 const HOURS_TO_MIN = 60;
 
 function todayISO(): string {
-  return new Date().toISOString().slice(0, 10);
+  return formatLocalISODate(new Date());
 }
 
 function timeToMinutes(time: string): number {
@@ -129,6 +130,43 @@ function pickLocation(
   }
 
   return { location: null, reason: "Bạn đang ngoài vùng cho phép chấm công." };
+}
+
+function shouldRelaxAttendanceGeofence(companyId: string | null) {
+  return companyId === DEMO_COMPANY_ID || isDemoMode() || !hasSupabaseEnv();
+}
+
+export function resolveCheckInLocation(input: {
+  companyId: string | null;
+  locations: AttendanceLocation[];
+  latitude: number | null;
+  longitude: number | null;
+  ip: string | null;
+}) {
+  const match = pickLocation(input.locations, {
+    latitude: input.latitude,
+    longitude: input.longitude,
+    ip: input.ip,
+  });
+
+  if (match.location) {
+    return { ...match, relaxed: false };
+  }
+
+  if (!shouldRelaxAttendanceGeofence(input.companyId)) {
+    return { ...match, relaxed: false };
+  }
+
+  const fallbackLocation = input.locations.find((loc) => loc.active) ?? input.locations[0] ?? null;
+  if (!fallbackLocation) {
+    return { ...match, relaxed: false };
+  }
+
+  return {
+    location: fallbackLocation,
+    reason: match.reason,
+    relaxed: true,
+  };
 }
 
 function calcLateMinutes(shift: AttendanceShift | null, checkInAt: Date): number {
@@ -255,15 +293,16 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     return { ok: false, error: "Bạn đã chấm công vào ca hôm nay rồi." };
   }
 
-  const inDemoMode = isDemoMode() || !hasSupabaseEnv();
-  const { location, reason } = pickLocation(data.locations, {
+  const resolvedLocation = resolveCheckInLocation({
+    companyId: ctx.companyId,
+    locations: data.locations,
     latitude: input.latitude,
     longitude: input.longitude,
     ip: input.ip,
   });
-  const effectiveLocation = location ?? (inDemoMode ? data.locations[0] ?? null : null);
+  const effectiveLocation = resolvedLocation.location;
   if (!effectiveLocation) {
-    return { ok: false, error: reason };
+    return { ok: false, error: resolvedLocation.reason };
   }
 
   const now = new Date();
@@ -307,7 +346,7 @@ export async function checkIn(input: CheckInInput): Promise<CheckInResult> {
     recordId = inserted?.id ?? recordId;
   } catch {
     // demo mode — persist vào in-memory store
-    if (inDemoMode && ctx.employeeId) {
+    if (shouldRelaxAttendanceGeofence(ctx.companyId) && ctx.employeeId) {
       demoUpsertRecord({
         id: recordId,
         company_id: ctx.companyId,
