@@ -1,4 +1,5 @@
 import type { Task, Sprint } from "@/types/domain";
+export { getSprintMonth } from "@/lib/kpi/sprintAllocation";
 
 /** Calculate sprint health based on time elapsed vs completion */
 export function getSprintHealth(sprint: Sprint, tasks: Task[]) {

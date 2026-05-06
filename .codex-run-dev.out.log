@@ -1,0 +1,89 @@
+
+> company-os@0.1.0 dev
+> next dev
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://26.8.116.171:3000
+- Environments: .env.local
+✓ Ready in 667ms
+Creating turbopack project { dir: 'C:\\Users\\Tran Phong\\bsb-company', testMode: true }
+- Experiments (use with caution):
+  · optimizePackageImports
+
+ GET / 307 in 2.8s (next.js: 90ms, proxy.ts: 2.5s, application-code: 188ms)
+ GET /login?next=%2Fdashboard 200 in 222ms (next.js: 83ms, proxy.ts: 5ms, application-code: 134ms)
+ GET / 307 in 1386ms (next.js: 5ms, proxy.ts: 1334ms, application-code: 48ms)
+ GET /dashboard 200 in 2.2s (next.js: 71ms, proxy.ts: 103ms, application-code: 2.0s)
+ GET /login?next=%2Fdashboard 200 in 58ms (next.js: 3ms, proxy.ts: 5ms, application-code: 50ms)
+ GET / 307 in 55ms (next.js: 4ms, proxy.ts: 5ms, application-code: 45ms)
+ GET /login?next=%2Fdashboard 200 in 51ms (next.js: 4ms, proxy.ts: 4ms, application-code: 43ms)
+ GET /login?next=%2F.well-known%2Fappspecific%2Fcom.chrome.devtools.json 200 in 53ms (next.js: 3ms, proxy.ts: 4ms, application-code: 47ms)
+ GET /login 200 in 57ms (next.js: 4ms, proxy.ts: 5ms, application-code: 47ms)
+ POST /login 200 in 48ms (next.js: 3ms, proxy.ts: 4ms, application-code: 41ms)
+ POST /login 200 in 49ms (next.js: 3ms, proxy.ts: 3ms, application-code: 43ms)
+ GET /dashboard 200 in 1103ms (next.js: 4ms, proxy.ts: 108ms, application-code: 991ms)
+ POST /login?next=%2Fdashboard 303 in 1391ms (next.js: 3ms, proxy.ts: 4ms, application-code: 1384ms)
+  └─ ƒ login({}) in 258ms app/(auth)/actions.ts
+ POST /dashboard 200 in 430ms (next.js: 3ms, proxy.ts: 163ms, application-code: 264ms)
+  └─ ƒ fetchMyNotificationsAction(20) in 257ms app/(app)/_actions/notifications.ts
+ GET /dashboard 200 in 107ms (next.js: 3ms, proxy.ts: 98ms, application-code: 5ms)
+ GET /dashboard 200 in 530ms (next.js: 3ms, proxy.ts: 98ms, application-code: 429ms)
+ POST /dashboard 200 in 1018ms (next.js: 3ms, proxy.ts: 154ms, application-code: 862ms)
+  └─ ƒ markNotificationReadAction("00000000-0000-0000-0000-000000005501") in 241ms app/(app)/_actions/notifications.ts
+ GET /dashboard 200 in 798ms (next.js: 5ms, proxy.ts: 265ms, application-code: 529ms)
+ GET /alerts 200 in 779ms (next.js: 49ms, proxy.ts: 231ms, application-code: 499ms)
+ GET /profile 200 in 1516ms (next.js: 54ms, proxy.ts: 413ms, application-code: 1049ms)
+ GET / 307 in 58ms (next.js: 6ms, proxy.ts: 4ms, application-code: 48ms)
+ GET / 307 in 52ms (next.js: 5ms, proxy.ts: 5ms, application-code: 42ms)
+ GET /login?next=%2Fdashboard 200 in 56ms (next.js: 5ms, proxy.ts: 4ms, application-code: 47ms)
+ GET /login?next=%2Fdashboard 200 in 62ms (next.js: 5ms, proxy.ts: 4ms, application-code: 54ms)
+ GET /attendance 200 in 1168ms (next.js: 55ms, proxy.ts: 240ms, application-code: 873ms)
+ POST /attendance 200 in 2.4s (next.js: 4ms, proxy.ts: 168ms, application-code: 2.2s)
+  └─ ƒ checkInAction({}) in 1545ms app/(app)/attendance/actions.ts
+ POST /attendance 200 in 2.4s (next.js: 4ms, proxy.ts: 282ms, application-code: 2.1s)
+  └─ ƒ checkOutAction({}) in 1573ms app/(app)/attendance/actions.ts
+ GET /attendance/settings 200 in 1092ms (next.js: 38ms, proxy.ts: 196ms, application-code: 858ms)
+ GET /attendance 200 in 1057ms (next.js: 3ms, proxy.ts: 274ms, application-code: 780ms)
+ GET /attendance/settings 200 in 604ms (next.js: 3ms, proxy.ts: 117ms, application-code: 484ms)
+ GET /attendance 200 in 599ms (next.js: 3ms, proxy.ts: 103ms, application-code: 493ms)
+ GET /people/onboarding 200 in 753ms (next.js: 61ms, proxy.ts: 107ms, application-code: 584ms)
+ GET /scheduling 200 in 1925ms (next.js: 1275ms, proxy.ts: 105ms, application-code: 545ms)
+ GET /scheduling/settings 200 in 1574ms (next.js: 947ms, proxy.ts: 106ms, application-code: 521ms)
+ GET /scheduling 200 in 853ms (next.js: 3ms, proxy.ts: 111ms, application-code: 738ms)
+ GET /scheduling?week=2026-04-27 200 in 626ms (next.js: 3ms, proxy.ts: 102ms, application-code: 521ms)
+ GET /scheduling?week=2026-05-04 200 in 1055ms (next.js: 4ms, proxy.ts: 104ms, application-code: 948ms)
+ GET /leave 200 in 651ms (next.js: 34ms, proxy.ts: 100ms, application-code: 518ms)
+ GET /leave/approvals 200 in 801ms (next.js: 42ms, proxy.ts: 184ms, application-code: 575ms)
+ GET /leave 200 in 693ms (next.js: 3ms, proxy.ts: 114ms, application-code: 576ms)
+ GET /compensation 200 in 518ms (next.js: 41ms, proxy.ts: 205ms, application-code: 271ms)
+ GET /profile 200 in 715ms (next.js: 3ms, proxy.ts: 149ms, application-code: 563ms)
+ GET /settings 200 in 2.5s (next.js: 1377ms, proxy.ts: 160ms, application-code: 966ms)
+ GET /settings 200 in 672ms (next.js: 92ms, proxy.ts: 273ms, application-code: 306ms)
+ GET /approvals 200 in 2.4s (next.js: 1225ms, proxy.ts: 378ms, application-code: 841ms)
+ GET /approvals 200 in 550ms (next.js: 84ms, proxy.ts: 224ms, application-code: 243ms)
+ GET /approvals 200 in 237ms (next.js: 4ms, proxy.ts: 131ms, application-code: 102ms)
+ GET /approvals 200 in 209ms (next.js: 3ms, proxy.ts: 107ms, application-code: 99ms)
+ GET /finance 200 in 814ms (next.js: 61ms, proxy.ts: 237ms, application-code: 516ms)
+ GET /kpi 200 in 556ms (next.js: 60ms, proxy.ts: 160ms, application-code: 336ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a40 200 in 2.8s (next.js: 1706ms, proxy.ts: 600ms, application-code: 532ms)
+ GET /kpi/00000000-0000-0000-0000-000000000201 200 in 2.3s (next.js: 1599ms, proxy.ts: 160ms, application-code: 534ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a20 200 in 421ms (next.js: 15ms, proxy.ts: 157ms, application-code: 249ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a01 200 in 428ms (next.js: 14ms, proxy.ts: 159ms, application-code: 254ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a10 200 in 510ms (next.js: 15ms, proxy.ts: 186ms, application-code: 309ms)
+ GET /kpi/00000000-0000-0000-0000-000000000101 200 in 451ms (next.js: 15ms, proxy.ts: 156ms, application-code: 280ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a10 200 in 449ms (next.js: 15ms, proxy.ts: 157ms, application-code: 277ms)
+ GET /kpi/00000000-0000-0000-0000-000000000101 200 in 296ms (next.js: 15ms, proxy.ts: 102ms, application-code: 179ms)
+ GET /kpi/00000000-0000-0000-0000-000000000102 200 in 287ms (next.js: 15ms, proxy.ts: 95ms, application-code: 178ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a11 200 in 300ms (next.js: 15ms, proxy.ts: 95ms, application-code: 190ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a20 200 in 290ms (next.js: 15ms, proxy.ts: 93ms, application-code: 182ms)
+ GET /kpi/00000000-0000-0000-0000-000000000201 200 in 324ms (next.js: 14ms, proxy.ts: 116ms, application-code: 195ms)
+ GET /kpi/00000000-0000-0000-0000-000000000201 200 in 421ms (next.js: 16ms, proxy.ts: 154ms, application-code: 251ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a01 200 in 295ms (next.js: 14ms, proxy.ts: 99ms, application-code: 182ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a11 200 in 610ms (next.js: 14ms, proxy.ts: 241ms, application-code: 356ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a10 200 in 475ms (next.js: 13ms, proxy.ts: 170ms, application-code: 292ms)
+ GET /kpi/00000000-0000-0000-0000-000000000101 200 in 291ms (next.js: 13ms, proxy.ts: 100ms, application-code: 177ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a20 200 in 429ms (next.js: 14ms, proxy.ts: 180ms, application-code: 236ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a01 200 in 715ms (next.js: 15ms, proxy.ts: 407ms, application-code: 294ms)
+ GET /kpi/00000000-0000-0000-0000-000000000a02 200 in 334ms (next.js: 14ms, proxy.ts: 96ms, application-code: 225ms)
+ GET /forecast 200 in 450ms (next.js: 46ms, proxy.ts: 159ms, application-code: 245ms)
