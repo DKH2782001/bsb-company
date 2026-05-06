@@ -76,7 +76,7 @@ export function SchedulingGridRow({
             className="text-[11px] flex items-center gap-1"
             style={{ color: "var(--text-soft)" }}
           >
-            {employee.role}
+            {employee.role} | {employee.departmentName}
             {employee.isPartTime && (
               <span
                 className="px-1 py-px rounded-sm text-[9px] uppercase tracking-[0.04em]"
@@ -144,6 +144,12 @@ export function SchedulingGridRow({
                     />
                   );
                 })}
+                <AssignShiftCell
+                  employeeId={employee.id}
+                  date={date}
+                  weekStart={weekStart}
+                  templates={templates}
+                />
               </div>
             ) : (
               <AssignShiftCell

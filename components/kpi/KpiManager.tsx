@@ -34,6 +34,8 @@ const KPI_IMPORT_COLUMNS: ImportColumn[] = [
 ];
 
 type Row = Kpi & {
+  calcMode: "sum" | "ratio" | "formula" | "manual";
+  metricGroup: "revenue" | "workload" | "ratio" | "financial" | "qualitative" | "other";
   status: "green" | "yellow" | "red" | "na";
   completion: number | null;
   target: number | null;
@@ -81,6 +83,7 @@ export function KpiManager({
       ),
     },
     { key: "level", header: "Cấp", render: (r) => <Badge variant="outline">{r.level}</Badge> },
+    { key: "calcMode", header: "Mode", render: (r) => <Badge variant="info">{r.calcMode}</Badge> },
     { key: "unit", header: "Đơn vị", render: (r) => r.unit },
     { key: "weight", header: "Trọng số", align: "right", render: (r) => r.weight.toFixed(2) },
     { key: "target", header: "Target", align: "right", render: (r) => r.target?.toLocaleString("vi-VN") ?? "—" },
@@ -133,6 +136,7 @@ export function KpiManager({
             { key: "name", header: "Tên KPI" },
             { key: "code", header: "Mã" },
             { key: "level", header: "Cấp" },
+            { key: "calcMode", header: "Mode" },
             { key: "unit", header: "Đơn vị" },
             { key: "target_frequency", header: "Tần suất" },
             { key: "target", header: "Mục tiêu" },

@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { hasSupabaseEnv } from "@/lib/env";
+import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
 import * as demo from "@/lib/queries/demo";
 import { getAuthenticatedUser, getServiceClient, getUserContext } from "@/lib/repositories/shared";
 import type { AuditLog } from "@/types/domain";
@@ -40,7 +40,7 @@ export async function writeAuditLog(payload: AuditPayload) {
   const { ip, ua, reqId } = await readRequestMeta();
 
   // Demo mode: ghi vào array in-memory để UI /audit hiển thị log thật trong dev
-  if (!hasSupabaseEnv()) {
+  if (isDemoMode() || !hasSupabaseEnv()) {
     const entry: AuditLog = {
       id: `al_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`,
       company_id: context.companyId,

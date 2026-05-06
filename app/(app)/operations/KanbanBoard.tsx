@@ -2,7 +2,7 @@
 
 import { useState, useRef, useTransition, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import type { Task, Employee, Kpi } from "@/types/domain";
+import type { Task, Employee, Kpi, DepartmentResultKpi, ActionPlan, ActionMetric } from "@/types/domain";
 import type { FilterState } from "./TaskFilterBar";
 import { applyFilters } from "./TaskFilterBar";
 import { isTaskOverdue, todayLocalISO } from "./sprint-utils";
@@ -83,6 +83,9 @@ type Props = {
   tasks: Task[];
   employees: Employee[];
   kpis: Kpi[];
+  resultKpis: DepartmentResultKpi[];
+  actionPlans: ActionPlan[];
+  actionMetrics: ActionMetric[];
   filters: FilterState;
   kpiLinkPct: number;
   selectedIds: string[];
@@ -91,7 +94,7 @@ type Props = {
 };
 
 export function KanbanBoard({
-  tasks, employees, kpis, filters, kpiLinkPct,
+  tasks, employees, kpis, resultKpis, actionPlans, actionMetrics, filters, kpiLinkPct,
   selectedIds, onToggleSelect, onOpenDetail,
 }: Props) {
   const [localStatus, setLocalStatus] = useState<Record<string, TaskStatus>>({});
@@ -160,6 +163,9 @@ export function KanbanBoard({
   function TaskCard({ task }: { task: Task }) {
     const assignee = employees.find((e) => e.id === task.assignee_id);
     const kpi = kpis.find((k) => k.id === task.linked_kpi_id);
+    const resultKpi = resultKpis.find((item) => item.id === task.linked_kpi_id);
+    const actionPlan = actionPlans.find((item) => item.id === task.linked_action_plan_id);
+    const actionMetric = actionMetrics.find((item) => item.id === task.action_metric_id);
     const overdue = isTaskOverdue(task);
     const days = daysUntilDue(task);
     const isSelected = selectedIds.includes(task.id);
@@ -206,13 +212,22 @@ export function KanbanBoard({
               {PRIORITY_LABEL[task.priority]}
             </Badge>
           )}
-          {kpi && <Badge variant="info">{kpi.code ?? kpi.name}</Badge>}
+          {(kpi || resultKpi) && <Badge variant="info">{kpi?.code ?? resultKpi?.name ?? kpi?.name}</Badge>}
+          {actionPlan && <Badge variant="outline">{actionPlan.title}</Badge>}
+          {actionMetric && <Badge variant="outline">{actionMetric.name}</Badge>}
           {task.task_type && task.task_type !== "growth" && (
             <span className="px-1.5 py-0.5 rounded-full bg-zinc-100 text-zinc-600 text-[9px] font-medium capitalize">
               {task.task_type}
             </span>
           )}
         </div>
+
+        {(task.action_target_value ?? 0) > 0 && (
+          <div className="mb-1.5 rounded-md border border-zinc-100 bg-zinc-50 px-2 py-1 text-[10px] text-zinc-600">
+            Progress {(task.action_actual_value ?? 0).toLocaleString("vi-VN")} /{" "}
+            {(task.action_target_value ?? 0).toLocaleString("vi-VN")} {task.progress_unit ?? ""}
+          </div>
+        )}
 
         {/* Time tracking mini badge */}
         {(task.estimated_hours || task.actual_hours) && (
@@ -266,6 +281,9 @@ export function KanbanBoard({
         {resolvedTasks.map((task) => {
           const assignee = employees.find((e) => e.id === task.assignee_id);
           const kpi = kpis.find((k) => k.id === task.linked_kpi_id);
+          const resultKpi = resultKpis.find((item) => item.id === task.linked_kpi_id);
+          const actionPlan = actionPlans.find((item) => item.id === task.linked_action_plan_id);
+          const actionMetric = actionMetrics.find((item) => item.id === task.action_metric_id);
           const overdue = isTaskOverdue(task);
           const days = daysUntilDue(task);
           const col = COLUMNS.find((c) => c.key === task.status);
@@ -318,7 +336,9 @@ export function KanbanBoard({
                     {PRIORITY_LABEL[task.priority]}
                   </Badge>
                 )}
-                {kpi && <Badge variant="info">{kpi.code ?? kpi.name}</Badge>}
+                {(kpi || resultKpi) && <Badge variant="info">{kpi?.code ?? resultKpi?.name ?? kpi?.name}</Badge>}
+                {actionPlan && <Badge variant="outline">{actionPlan.title}</Badge>}
+                {actionMetric && <Badge variant="outline">{actionMetric.name}</Badge>}
               </div>
 
               {/* Time */}
@@ -350,6 +370,13 @@ export function KanbanBoard({
                   {task.due_date.slice(5)}
                   {overdue && <span className="text-[9px]">({Math.abs(days!)}d)</span>}
                 </div>
+              )}
+
+              {(task.action_target_value ?? 0) > 0 && (
+                <span className="shrink-0 text-xs text-zinc-500">
+                  {(task.action_actual_value ?? 0).toLocaleString("vi-VN")} /{" "}
+                  {(task.action_target_value ?? 0).toLocaleString("vi-VN")} {task.progress_unit ?? ""}
+                </span>
               )}
             </div>
           );

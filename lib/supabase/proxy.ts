@@ -4,6 +4,24 @@ import { appEnv, isDemoMode } from "@/lib/env";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
+  const hasDemoSession = request.cookies.get("bizos_demo_session")?.value === "1";
+
+  if (isDemoMode()) {
+    const { pathname } = request.nextUrl;
+    const isAuthPage =
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/signup") ||
+      pathname.startsWith("/reset-password") ||
+      pathname.startsWith("/update-password");
+
+    if (hasDemoSession && isAuthPage && !pathname.startsWith("/update-password")) {
+      const redirect = request.nextUrl.clone();
+      redirect.pathname = "/dashboard";
+      return NextResponse.redirect(redirect);
+    }
+
+    return supabaseResponse;
+  }
 
   if (!appEnv.supabaseUrl || !appEnv.supabaseAnonKey) {
     if (isDemoMode()) return supabaseResponse;
@@ -28,9 +46,14 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const result = await supabase.auth.getUser();
+    user = result.data.user;
+  } catch {
+    if (hasDemoSession) return supabaseResponse;
+    user = null;
+  }
 
   const { pathname } = request.nextUrl;
   const isAuthPage =
@@ -40,14 +63,14 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/update-password");
   const isPublic = isAuthPage || pathname === "/" || pathname.startsWith("/api/health");
 
-  if (!user && !isPublic) {
+  if (!user && !hasDemoSession && !isPublic) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/login";
     redirect.searchParams.set("next", pathname);
     return NextResponse.redirect(redirect);
   }
 
-  if (user && isAuthPage && !pathname.startsWith("/update-password")) {
+  if ((user || hasDemoSession) && isAuthPage && !pathname.startsWith("/update-password")) {
     const redirect = request.nextUrl.clone();
     redirect.pathname = "/dashboard";
     return NextResponse.redirect(redirect);

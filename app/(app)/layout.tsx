@@ -11,7 +11,12 @@ import { DEMO_AUTH_USER_ID } from "@/lib/queries/demo";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [supabase, locale] = await Promise.all([createClientOrNull(), getLocale()]);
-  const user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  let user = null;
+  try {
+    user = supabase ? (await supabase.auth.getUser()).data.user : null;
+  } catch {
+    user = null;
+  }
   const context = await getUserContext(user ?? (await getAuthenticatedUser()));
   const roleLabel = context.roles[0]?.toUpperCase() ?? "CEO";
 

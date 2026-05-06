@@ -21,7 +21,12 @@ import { ProgressList } from "@/components/widgets/ProgressList";
 import { ActivityFeed } from "@/components/widgets/ActivityFeed";
 import { InsightCard } from "@/components/widgets/InsightCard";
 import { StatChip } from "@/components/widgets/StatChip";
+import { KpiExecutionAlignment } from "@/components/kpi-execution/KpiExecutionAlignment";
 import {
+  fetchActionMetrics,
+  fetchActionPlans,
+  fetchDepartmentResultKpis,
+  fetchEmployeeExecutions,
   fetchKpis,
   fetchKpiTargets,
   fetchKpiActuals,
@@ -34,13 +39,28 @@ import {
   demo,
 } from "@/lib/queries";
 import { buildKpiRows } from "@/lib/kpi/cascade";
+import { buildKpiExecutionSnapshots } from "@/lib/kpi/execution";
 import { formatCompactVND, formatPercent } from "@/lib/utils";
 
 export const revalidate = 300;
 
 export default async function DashboardPage() {
   const { t } = await tServer();
-  const [kpis, targets, actuals, employees, payroll, tasks, alerts, entries, departments] = await Promise.all([
+  const [
+    kpis,
+    targets,
+    actuals,
+    employees,
+    payroll,
+    tasks,
+    alerts,
+    entries,
+    departments,
+    departmentResultKpis,
+    actionPlans,
+    actionMetrics,
+    employeeExecutions,
+  ] = await Promise.all([
     fetchKpis(),
     fetchKpiTargets(),
     fetchKpiActuals(),
@@ -50,9 +70,22 @@ export default async function DashboardPage() {
     fetchAlerts(),
     fetchAccounting(),
     fetchDepartments(),
+    fetchDepartmentResultKpis(),
+    fetchActionPlans(),
+    fetchActionMetrics(),
+    fetchEmployeeExecutions(),
   ]);
 
   const rows = buildKpiRows(kpis, targets, actuals);
+  const executionAlignment = buildKpiExecutionSnapshots({
+    departmentKpis: departmentResultKpis,
+    actionPlans,
+    actionMetrics,
+    employeeExecution: employeeExecutions,
+    tasks,
+    employees,
+    departments,
+  })[0]?.alignment;
   const gpRow = rows.find((r) => r.code === "GP");
   const npRow = rows.find((r) => r.code === "NP");
 
@@ -404,6 +437,12 @@ export default async function DashboardPage() {
           tag="OK"
         />
       </div>
+
+      {executionAlignment && (
+        <div className="mb-6">
+          <KpiExecutionAlignment alignment={executionAlignment} />
+        </div>
+      )}
 
       {/* Bottom row: finance snapshot + risk */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

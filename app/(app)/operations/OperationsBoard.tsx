@@ -5,19 +5,43 @@ import { TaskFilterBar, type FilterState, EMPTY_FILTERS } from "./TaskFilterBar"
 import { KanbanBoard } from "./KanbanBoard";
 import { TaskDetailModal } from "./TaskDetailModal";
 import SprintView from "./SprintView";
-import type { Task, Sprint, Employee, Kpi, Department, TaskResult } from "@/types/domain";
+import type {
+  Task,
+  Sprint,
+  Employee,
+  Kpi,
+  Department,
+  TaskResult,
+  DepartmentResultKpi,
+  ActionPlan,
+  ActionMetric,
+} from "@/types/domain";
 
 type Props = {
   tasks: Task[];
   sprints: Sprint[];
   employees: Employee[];
   kpis: Kpi[];
+  resultKpis: DepartmentResultKpi[];
+  actionPlans: ActionPlan[];
+  actionMetrics: ActionMetric[];
   departments: Department[];
   taskResults?: TaskResult[];
   kpiLinkPct: number;
 };
 
-export function OperationsBoard({ tasks, sprints, employees, kpis, departments, taskResults = [], kpiLinkPct }: Props) {
+export function OperationsBoard({
+  tasks,
+  sprints,
+  employees,
+  kpis,
+  resultKpis,
+  actionPlans,
+  actionMetrics,
+  departments,
+  taskResults = [],
+  kpiLinkPct,
+}: Props) {
   const [activeTab, setActiveTab] = useState<"tasks" | "sprints">("tasks");
 
   const [filters, setFilters] = useState<FilterState>(EMPTY_FILTERS);
@@ -74,6 +98,9 @@ export function OperationsBoard({ tasks, sprints, employees, kpis, departments, 
             tasks={tasks}
             employees={employees}
             kpis={kpis}
+            resultKpis={resultKpis}
+            actionPlans={actionPlans}
+            actionMetrics={actionMetrics}
             filters={filters}
             kpiLinkPct={kpiLinkPct}
             selectedIds={selectedIds}
@@ -96,6 +123,9 @@ export function OperationsBoard({ tasks, sprints, employees, kpis, departments, 
           task={detailTask}
           employees={employees}
           kpis={kpis}
+          resultKpis={resultKpis}
+          actionPlans={actionPlans}
+          actionMetrics={actionMetrics}
           departments={departments}
           results={taskResults.filter((r) => r.task_id === detailTask.id)}
           onClose={() => setDetailTaskId(null)}

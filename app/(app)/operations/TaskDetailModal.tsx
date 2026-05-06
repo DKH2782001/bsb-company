@@ -5,7 +5,16 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import type { Task, Employee, Kpi, Department, TaskResult } from "@/types/domain";
+import type {
+  Task,
+  Employee,
+  Kpi,
+  Department,
+  TaskResult,
+  DepartmentResultKpi,
+  ActionPlan,
+  ActionMetric,
+} from "@/types/domain";
 import { updateTaskAction, updateTaskStatusAction, addTaskResultAction, deleteTaskResultAction } from "@/app/(app)/workspace/actions";
 import {
   X,
@@ -19,12 +28,16 @@ import {
   FileText,
   Zap,
   Timer,
+  CheckCircle2,
 } from "lucide-react";
 
 type Props = {
   task: Task;
   employees: Employee[];
   kpis: Kpi[];
+  resultKpis: DepartmentResultKpi[];
+  actionPlans: ActionPlan[];
+  actionMetrics: ActionMetric[];
   departments: Department[];
   results?: TaskResult[];
   onClose: () => void;
@@ -53,7 +66,17 @@ const TYPE_OPTIONS = [
   { value: "urgent", label: "Urgent", emoji: "⚡" },
 ];
 
-export function TaskDetailModal({ task, employees, kpis, departments, results = [], onClose }: Props) {
+export function TaskDetailModal({
+  task,
+  employees,
+  kpis,
+  resultKpis,
+  actionPlans,
+  actionMetrics,
+  departments,
+  results = [],
+  onClose,
+}: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [now] = useState(() => Date.now());
@@ -70,9 +93,18 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
   const [assigneeId, setAssigneeId] = useState(task.assignee_id ?? "");
   const [departmentId, setDepartmentId] = useState(task.department_id ?? "");
   const [linkedKpiId, setLinkedKpiId] = useState(task.linked_kpi_id ?? "");
+  const [linkedActionPlanId, setLinkedActionPlanId] = useState(task.linked_action_plan_id ?? "");
+  const [actionMetricId, setActionMetricId] = useState(task.action_metric_id ?? "");
   const [dueDate, setDueDate] = useState(task.due_date ?? "");
   const [estimatedHours, setEstimatedHours] = useState(task.estimated_hours?.toString() ?? "");
   const [actualHours, setActualHours] = useState(task.actual_hours?.toString() ?? "");
+  const [actionTargetValue, setActionTargetValue] = useState(task.action_target_value?.toString() ?? "");
+  const [actionActualValue, setActionActualValue] = useState(task.action_actual_value?.toString() ?? "");
+  const [taskWeight, setTaskWeight] = useState(task.task_weight?.toString() ?? "1");
+  const [progressUnit, setProgressUnit] = useState(task.progress_unit ?? "");
+  const [qualityScore, setQualityScore] = useState(task.quality_score?.toString() ?? "");
+  const [slaScore, setSlaScore] = useState(task.sla_score?.toString() ?? "");
+  const [blockedReason, setBlockedReason] = useState(task.blocked_reason ?? "");
 
   // Overdue calc
   const isOverdue =
@@ -83,6 +115,16 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
 
   // Assignee lookup
   const assignee = employees.find((e) => e.id === assigneeId);
+  const resultKpi = resultKpis.find((item) => item.id === linkedKpiId);
+  const linkedKpi = kpis.find((item) => item.id === linkedKpiId);
+  const filteredActionPlans = actionPlans.filter((item) => !linkedKpiId || item.linked_kpi_id === linkedKpiId);
+  const linkedActionPlan = actionPlans.find((item) => item.id === linkedActionPlanId);
+  const filteredActionMetrics = actionMetrics.filter((item) => !linkedActionPlanId || item.action_plan_id === linkedActionPlanId);
+  const linkedActionMetric = actionMetrics.find((item) => item.id === actionMetricId);
+  const actionTargetNumber = Number(actionTargetValue || 0);
+  const actionActualNumber = Number(actionActualValue || 0);
+  const autoCompletionPercent = actionTargetNumber > 0 ? (actionActualNumber / actionTargetNumber) * 100 : 0;
+  const weightedTaskScore = Number(taskWeight || 0) * autoCompletionPercent / 100;
 
   // Close on Escape
   useEffect(() => {
@@ -109,9 +151,18 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
       fd.set("assigneeId", assigneeId);
       fd.set("departmentId", departmentId);
       fd.set("linkedKpiId", linkedKpiId);
+      fd.set("linkedActionPlanId", linkedActionPlanId);
+      fd.set("actionMetricId", actionMetricId);
       fd.set("dueDate", dueDate);
       if (estimatedHours) fd.set("estimatedHours", estimatedHours);
       if (actualHours) fd.set("actualHours", actualHours);
+      fd.set("actionTargetValue", actionTargetValue);
+      fd.set("actionActualValue", actionActualValue);
+      fd.set("taskWeight", taskWeight);
+      fd.set("progressUnit", progressUnit);
+      fd.set("qualityScore", qualityScore);
+      fd.set("slaScore", slaScore);
+      fd.set("blockedReason", blockedReason);
       await updateTaskAction(fd);
       router.refresh();
       onClose();
@@ -320,12 +371,60 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
               </label>
               <select
                 value={linkedKpiId}
-                onChange={(e) => { setLinkedKpiId(e.target.value); markDirty(); }}
+                onChange={(e) => {
+                  setLinkedKpiId(e.target.value);
+                  setLinkedActionPlanId("");
+                  setActionMetricId("");
+                  markDirty();
+                }}
                 className={selectClass}
               >
                 <option value="">— Không gắn KPI —</option>
                 {kpis.map((k) => (
                   <option key={k.id} value={k.id}>{k.code ?? k.name}</option>
+                ))}
+                {resultKpis
+                  .filter((item) => !kpis.some((kpi) => kpi.id === item.id))
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>{item.name}</option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Action Plan */}
+            <div>
+              <label className={labelClass}>
+                <Target className="h-3 w-3" /> Action Plan
+              </label>
+              <select
+                value={linkedActionPlanId}
+                onChange={(e) => {
+                  setLinkedActionPlanId(e.target.value);
+                  setActionMetricId("");
+                  markDirty();
+                }}
+                className={selectClass}
+              >
+                <option value="">- Chua gan Action Plan -</option>
+                {filteredActionPlans.map((plan) => (
+                  <option key={plan.id} value={plan.id}>{plan.title}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Action Metric */}
+            <div>
+              <label className={labelClass}>
+                <Target className="h-3 w-3" /> Chỉ số đo lường
+              </label>
+              <select
+                value={actionMetricId}
+                onChange={(e) => { setActionMetricId(e.target.value); markDirty(); }}
+                className={selectClass}
+              >
+                <option value="">- Chua gan metric -</option>
+                {filteredActionMetrics.map((metric) => (
+                  <option key={metric.id} value={metric.id}>{metric.name}</option>
                 ))}
               </select>
             </div>
@@ -374,7 +473,166 @@ export function TaskDetailModal({ task, employees, kpis, departments, results = 
                 className="h-9 text-sm"
               />
             </div>
+            <div>
+              <label className={labelClass}>
+                <Target className="h-3 w-3" /> Mục tiêu cần đạt
+              </label>
+              <Input
+                type="number"
+                min={0}
+                value={actionTargetValue}
+                onChange={(e) => { setActionTargetValue(e.target.value); markDirty(); }}
+                placeholder="0"
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                <Target className="h-3 w-3" /> Kết quả thực tế
+              </label>
+              <Input
+                type="number"
+                min={0}
+                value={actionActualValue}
+                onChange={(e) => { setActionActualValue(e.target.value); markDirty(); }}
+                placeholder="0"
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                <Tag className="h-3 w-3" /> Đơn vị đo
+              </label>
+              <Input
+                value={progressUnit}
+                onChange={(e) => { setProgressUnit(e.target.value); markDirty(); }}
+                placeholder="Đơn vị: khách hàng / trường hợp / video..."
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                <Target className="h-3 w-3" /> Trọng số công việc
+              </label>
+              <Input
+                type="number"
+                min={0}
+                step={0.1}
+                value={taskWeight}
+                onChange={(e) => { setTaskWeight(e.target.value); markDirty(); }}
+                placeholder="1"
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2 text-sm text-indigo-900">
+              <div className="text-xs font-medium text-indigo-700">% hoàn thành tự tính</div>
+              <div className="mt-1 font-semibold">
+                {autoCompletionPercent.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%
+              </div>
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                <Timer className="h-3 w-3" /> SLA score
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={slaScore}
+                onChange={(e) => { setSlaScore(e.target.value); markDirty(); }}
+                placeholder="0"
+                className="h-9 text-sm"
+              />
+            </div>
+
+            <div>
+              <label className={labelClass}>
+                <CheckCircle2 className="h-3 w-3" /> Quality score
+              </label>
+              <Input
+                type="number"
+                min={0}
+                max={100}
+                value={qualityScore}
+                onChange={(e) => { setQualityScore(e.target.value); markDirty(); }}
+                placeholder="0"
+                className="h-9 text-sm"
+              />
+            </div>
           </div>
+
+          {status === "blocked" && (
+            <div>
+              <label className={labelClass}>
+                <AlertTriangle className="h-3 w-3" /> Blocked reason
+              </label>
+              <textarea
+                value={blockedReason}
+                onChange={(e) => { setBlockedReason(e.target.value); markDirty(); }}
+                rows={2}
+                className="w-full rounded-lg border border-red-200 bg-red-50/40 px-3 py-2 text-sm text-zinc-700 focus:outline-none focus:ring-2 focus:ring-red-300 resize-y"
+                placeholder="Ly do task bi blocked..."
+              />
+            </div>
+          )}
+
+          {(resultKpi || linkedKpi || linkedActionPlan || linkedActionMetric || Number(actionTargetValue || 0) > 0 || Number(taskWeight || 0) > 0) && (
+            <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4">
+              <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-indigo-700">
+                Liên kết thực thi
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2 text-sm">
+                <div>
+                  <div className="text-xs text-zinc-500">Result KPI</div>
+                  <div className="mt-1 font-medium text-zinc-900">{resultKpi?.name ?? linkedKpi?.name ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Action Plan</div>
+                  <div className="mt-1 font-medium text-zinc-900">{linkedActionPlan?.title ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Chỉ số đo lường</div>
+                  <div className="mt-1 font-medium text-zinc-900">{linkedActionMetric?.name ?? "—"}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Tiến độ hành động</div>
+                  <div className="mt-1 font-medium text-zinc-900">
+                    {Number(actionActualValue || 0).toLocaleString("vi-VN")} /{" "}
+                    {Number(actionTargetValue || 0).toLocaleString("vi-VN")} {progressUnit}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Trọng số công việc</div>
+                  <div className="mt-1 font-medium text-zinc-900">{taskWeight || 1}</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">% hoàn thành tự tính</div>
+                  <div className="mt-1 font-medium text-zinc-900">
+                    {autoCompletionPercent.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}%
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Điểm quy đổi</div>
+                  <div className="mt-1 font-medium text-zinc-900">
+                    {weightedTaskScore.toLocaleString("vi-VN", { maximumFractionDigits: 2 })}
+                  </div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">SLA Score</div>
+                  <div className="mt-1 font-medium text-zinc-900">{slaScore || 0}%</div>
+                </div>
+                <div>
+                  <div className="text-xs text-zinc-500">Quality Score</div>
+                  <div className="mt-1 font-medium text-zinc-900">{qualityScore || 0}%</div>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Hours progress bar */}
           {(estimatedHours || actualHours) && (

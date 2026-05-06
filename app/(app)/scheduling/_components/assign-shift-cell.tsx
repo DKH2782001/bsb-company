@@ -13,6 +13,7 @@ type Props = {
 
 export function AssignShiftCell({ employeeId, date, weekStart, templates }: Props) {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
   const assign = (templateId: string) => {
@@ -22,19 +23,27 @@ export function AssignShiftCell({ employeeId, date, weekStart, templates }: Prop
     fd.set("employee_id", employeeId);
     fd.set("shift_date", date);
     startTransition(async () => {
-      await assignShiftAction(fd);
-      setOpen(false);
+      const result = await assignShiftAction(fd);
+      if (result.ok) {
+        setError(null);
+        setOpen(false);
+      } else {
+        setError(result.error);
+      }
     });
   };
 
   return (
     <div className="relative h-full min-h-12">
       <button
-        className="w-full h-full min-h-12 grid place-items-center rounded opacity-0 hover:opacity-100 transition-opacity"
-        style={{ color: "var(--text-soft)" }}
-        onClick={() => setOpen((v) => !v)}
+        className="w-full h-full min-h-12 grid place-items-center rounded-lg border border-dashed transition-colors hover:bg-[var(--surface-alt)]"
+        style={{ color: "var(--text-soft)", borderColor: "var(--line-soft)" }}
+        onClick={() => {
+          setError(null);
+          setOpen((v) => !v);
+        }}
         disabled={pending}
-        aria-label="Thêm ca"
+        aria-label="Them ca"
       >
         {pending ? (
           <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
@@ -52,7 +61,7 @@ export function AssignShiftCell({ employeeId, date, weekStart, templates }: Prop
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
           <div
-            className="absolute top-1 left-1/2 -translate-x-1/2 z-50 rounded-lg shadow-lg border p-1 min-w-[130px]"
+            className="absolute top-1 left-1/2 -translate-x-1/2 z-50 rounded-lg shadow-lg border p-1 min-w-[150px]"
             style={{ background: "var(--surface)", borderColor: "var(--line-soft)" }}
           >
             {templates.map((tpl) => (
@@ -66,6 +75,7 @@ export function AssignShiftCell({ employeeId, date, weekStart, templates }: Prop
                 {tpl.shortLabel ?? tpl.name}
               </button>
             ))}
+            {error && <div className="mt-1 rounded-md bg-red-50 px-2 py-1.5 text-[11px] text-red-600">{error}</div>}
           </div>
         </>
       )}

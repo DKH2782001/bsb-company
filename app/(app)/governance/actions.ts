@@ -13,13 +13,13 @@ export async function resolveAlertAction(formData: FormData) {
 export async function approveRequestAction(formData: FormData) {
   const approvalId = String(formData.get("approvalId") ?? "");
   if (!approvalId) return;
-  await setApprovalStatus(approvalId, "approved");
+  await setApprovalStatus(approvalId, "approved", String(formData.get("note") ?? ""));
   revalidatePath("/approvals");
 }
 
 export async function rejectRequestAction(formData: FormData) {
   const approvalId = String(formData.get("approvalId") ?? "");
   if (!approvalId) return;
-  await setApprovalStatus(approvalId, "rejected");
+  await setApprovalStatus(approvalId, "rejected", String(formData.get("note") ?? ""));
   revalidatePath("/approvals");
 }

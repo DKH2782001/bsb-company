@@ -1,26 +1,59 @@
 import * as demo from "@/lib/queries/demo";
+import {
+  executionDemoActionMetrics,
+  executionDemoActionPlans,
+  executionDemoKpis,
+  executionDemoTasks,
+} from "@/lib/queries/kpiExecutionDemo";
 import { writeAuditLog } from "@/lib/repositories/audit";
 import { getAuthenticatedUser, getDbClientOrThrow, getUserContext, withDemoFallback } from "@/lib/repositories/shared";
-import { hasSupabaseEnv } from "@/lib/env";
+import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
 import type { Task, Sprint, TaskResult } from "@/types/domain";
 
 function shouldUseDemoStore() {
-  return !hasSupabaseEnv();
+  return isDemoMode() || !hasSupabaseEnv();
 }
 
 function genId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 7)}`;
 }
 
+function mergeTasks(primary: Task[], secondary: Task[]) {
+  const seen = new Set(primary.map((task) => task.id));
+  return [...primary, ...secondary.filter((task) => !seen.has(task.id))];
+}
+
+function executionTaskIndex(taskId: string) {
+  return executionDemoTasks.findIndex((task) => task.id === taskId);
+}
+
+function demoTaskIndex(taskId: string) {
+  return demo.demoTasks.findIndex((task) => task.id === taskId);
+}
+
+function isLinkedToExecution(input: {
+  linkedKpiId?: string | null;
+  linkedActionPlanId?: string | null;
+  actionMetricId?: string | null;
+}) {
+  return Boolean(
+    (input.linkedKpiId && executionDemoKpis.some((row) => row.id === input.linkedKpiId)) ||
+      (input.linkedActionPlanId && executionDemoActionPlans.some((row) => row.id === input.linkedActionPlanId)) ||
+      (input.actionMetricId && executionDemoActionMetrics.some((row) => row.id === input.actionMetricId)),
+  );
+}
+
 export async function listTasks() {
-  return withDemoFallback(demo.demoTasks, async (db) => {
+  return withDemoFallback(mergeTasks(demo.demoTasks, executionDemoTasks), async (db) => {
     const { data, error } = await db.from("tasks").select("*").order("due_date");
     if (error) throw error;
-    return data ?? [];
+    return mergeTasks((data ?? []) as Task[], executionDemoTasks);
   });
 }
 
 export async function getTask(taskId: string): Promise<Task | null> {
+  const executionTask = executionDemoTasks.find((t) => t.id === taskId);
+  if (executionTask) return executionTask;
   if (shouldUseDemoStore()) {
     return demo.demoTasks.find((t) => t.id === taskId) ?? null;
   }
@@ -29,7 +62,7 @@ export async function getTask(taskId: string): Promise<Task | null> {
     const { data } = await (db.from("tasks") as unknown as {
       select: (s: string) => { eq: (c: string, v: string) => { maybeSingle: () => Promise<{ data: Task | null }> } };
     }).select("*").eq("id", taskId).maybeSingle();
-    return data;
+    return data ?? demo.demoTasks.find((t) => t.id === taskId) ?? null;
   } catch {
     return demo.demoTasks.find((t) => t.id === taskId) ?? null;
   }
@@ -40,6 +73,12 @@ export async function createTask(input: {
   assigneeId?: string;
   departmentId?: string;
   linkedKpiId?: string;
+  linkedActionPlanId?: string;
+  actionMetricId?: string;
+  actionTargetValue?: number;
+  actionActualValue?: number;
+  taskWeight?: number;
+  progressUnit?: string;
   dueDate?: string;
   priority?: "low" | "normal" | "high" | "urgent";
   taskType?: "growth" | "maintenance" | "admin" | "urgent";
@@ -50,12 +89,29 @@ export async function createTask(input: {
   const context = await getUserContext(user);
   if (!context.companyId) return;
 
+  const selectedMetric = input.actionMetricId
+    ? executionDemoActionMetrics.find((metric) => metric.id === input.actionMetricId) ??
+      demo.demoActionMetrics.find((metric) => metric.id === input.actionMetricId)
+    : null;
+  const selectedPlan = (input.linkedActionPlanId || selectedMetric?.action_plan_id)
+    ? executionDemoActionPlans.find((plan) => plan.id === (input.linkedActionPlanId || selectedMetric?.action_plan_id)) ??
+      demo.demoActionPlans.find((plan) => plan.id === (input.linkedActionPlanId || selectedMetric?.action_plan_id))
+    : null;
+  const linkedKpiId = input.linkedKpiId || selectedPlan?.linked_kpi_id || null;
+  const linkedActionPlanId = input.linkedActionPlanId || selectedMetric?.action_plan_id || null;
+
   const payload = {
     company_id: context.companyId,
     title: input.title,
     assignee_id: input.assigneeId || null,
     department_id: input.departmentId || null,
-    linked_kpi_id: input.linkedKpiId || null,
+    linked_kpi_id: linkedKpiId,
+    linked_action_plan_id: linkedActionPlanId,
+    action_metric_id: input.actionMetricId || null,
+    action_target_value: input.actionTargetValue ?? null,
+    action_actual_value: input.actionActualValue ?? null,
+    task_weight: input.taskWeight ?? 1,
+    progress_unit: input.progressUnit || null,
     due_date: input.dueDate || null,
     priority: input.priority || "normal",
     task_type: input.taskType || "growth",
@@ -64,27 +120,41 @@ export async function createTask(input: {
     story_points: input.storyPoints ?? null,
   };
 
+  const newTask: Task = {
+    id: genId("t"),
+    company_id: context.companyId,
+    title: input.title,
+    description: null,
+    assignee_id: input.assigneeId || null,
+    reviewer_id: null,
+    department_id: input.departmentId || null,
+    project_id: null,
+    linked_kpi_id: linkedKpiId,
+    linked_action_plan_id: linkedActionPlanId,
+    action_metric_id: input.actionMetricId || null,
+    priority: (input.priority || "normal") as Task["priority"],
+    task_type: (input.taskType || "growth") as Task["task_type"],
+    status: "todo",
+    due_date: input.dueDate || null,
+    estimated_hours: null,
+    actual_hours: null,
+    action_target_value: input.actionTargetValue ?? null,
+    action_actual_value: input.actionActualValue ?? null,
+    task_weight: input.taskWeight ?? 1,
+    progress_unit: input.progressUnit || null,
+    quality_score: null,
+    sla_score: null,
+    sprint_id: input.sprintId || null,
+    story_points: input.storyPoints ?? null,
+    parent_task_id: null,
+  };
+
+  if (isLinkedToExecution({ linkedKpiId, linkedActionPlanId, actionMetricId: input.actionMetricId })) {
+    executionDemoTasks.push(newTask);
+    return;
+  }
+
   if (shouldUseDemoStore()) {
-    const newTask: Task = {
-      id: genId("t"),
-      company_id: context.companyId,
-      title: input.title,
-      description: null,
-      assignee_id: input.assigneeId || null,
-      reviewer_id: null,
-      department_id: input.departmentId || null,
-      project_id: null,
-      linked_kpi_id: input.linkedKpiId || null,
-      priority: (input.priority || "normal") as Task["priority"],
-      task_type: (input.taskType || "growth") as Task["task_type"],
-      status: "todo",
-      due_date: input.dueDate || null,
-      estimated_hours: null,
-      actual_hours: null,
-      sprint_id: input.sprintId || null,
-      story_points: input.storyPoints ?? null,
-      parent_task_id: null,
-    };
     demo.demoTasks.push(newTask);
     return;
   }
@@ -152,8 +222,14 @@ export async function updateTaskStatus(input: {
   const context = await getUserContext(user);
   if (!context.companyId) return;
 
+  const exIdx = executionTaskIndex(input.taskId);
+  if (exIdx >= 0) {
+    executionDemoTasks[exIdx] = { ...executionDemoTasks[exIdx], status: input.status };
+    return;
+  }
+
   if (shouldUseDemoStore()) {
-    const idx = demo.demoTasks.findIndex((t) => t.id === input.taskId);
+    const idx = demoTaskIndex(input.taskId);
     if (idx >= 0) demo.demoTasks[idx] = { ...demo.demoTasks[idx], status: input.status };
     return;
   }
@@ -183,6 +259,8 @@ export async function updateTask(input: {
   assigneeId?: string | null;
   departmentId?: string | null;
   linkedKpiId?: string | null;
+  linkedActionPlanId?: string | null;
+  actionMetricId?: string | null;
   dueDate?: string | null;
   priority?: "low" | "normal" | "high" | "urgent";
   taskType?: "growth" | "maintenance" | "admin" | "urgent";
@@ -191,6 +269,13 @@ export async function updateTask(input: {
   actualHours?: number | null;
   sprintId?: string | null;
   storyPoints?: number | null;
+  actionTargetValue?: number | null;
+  actionActualValue?: number | null;
+  taskWeight?: number | null;
+  progressUnit?: string | null;
+  qualityScore?: number | null;
+  slaScore?: number | null;
+  blockedReason?: string | null;
 }) {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
@@ -202,6 +287,8 @@ export async function updateTask(input: {
   if (input.assigneeId !== undefined) payload.assignee_id = input.assigneeId || null;
   if (input.departmentId !== undefined) payload.department_id = input.departmentId || null;
   if (input.linkedKpiId !== undefined) payload.linked_kpi_id = input.linkedKpiId || null;
+  if (input.linkedActionPlanId !== undefined) payload.linked_action_plan_id = input.linkedActionPlanId || null;
+  if (input.actionMetricId !== undefined) payload.action_metric_id = input.actionMetricId || null;
   if (input.dueDate !== undefined) payload.due_date = input.dueDate || null;
   if (input.priority !== undefined) payload.priority = input.priority;
   if (input.taskType !== undefined) payload.task_type = input.taskType;
@@ -210,14 +297,25 @@ export async function updateTask(input: {
   if (input.actualHours !== undefined) payload.actual_hours = input.actualHours;
   if (input.sprintId !== undefined) payload.sprint_id = input.sprintId;
   if (input.storyPoints !== undefined) payload.story_points = input.storyPoints;
+  if (input.actionTargetValue !== undefined) payload.action_target_value = input.actionTargetValue;
+  if (input.actionActualValue !== undefined) payload.action_actual_value = input.actionActualValue;
+  if (input.taskWeight !== undefined) payload.task_weight = input.taskWeight;
+  if (input.progressUnit !== undefined) payload.progress_unit = input.progressUnit || null;
+  if (input.qualityScore !== undefined) payload.quality_score = input.qualityScore;
+  if (input.slaScore !== undefined) payload.sla_score = input.slaScore;
+  if (input.blockedReason !== undefined) payload.blocked_reason = input.blockedReason || null;
 
   if (Object.keys(payload).length === 0) return;
 
+  const exIdx = executionTaskIndex(input.taskId);
+  if (exIdx >= 0) {
+    executionDemoTasks[exIdx] = { ...executionDemoTasks[exIdx], ...(payload as Partial<Task>) };
+    return;
+  }
+
   if (shouldUseDemoStore()) {
-    const idx = demo.demoTasks.findIndex((t) => t.id === input.taskId);
-    if (idx >= 0) {
-      demo.demoTasks[idx] = { ...demo.demoTasks[idx], ...(payload as Partial<Task>) };
-    }
+    const idx = demoTaskIndex(input.taskId);
+    if (idx >= 0) demo.demoTasks[idx] = { ...demo.demoTasks[idx], ...(payload as Partial<Task>) };
     return;
   }
 
@@ -245,6 +343,16 @@ export async function bulkUpdateTaskStatus(input: {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
   if (!context.companyId || input.taskIds.length === 0) return;
+
+  const executionIds = new Set(input.taskIds);
+  let touchedExecution = false;
+  for (let i = 0; i < executionDemoTasks.length; i++) {
+    if (executionIds.has(executionDemoTasks[i].id)) {
+      executionDemoTasks[i] = { ...executionDemoTasks[i], status: input.status };
+      touchedExecution = true;
+    }
+  }
+  if (touchedExecution && input.taskIds.every((id) => executionTaskIndex(id) >= 0)) return;
 
   if (shouldUseDemoStore()) {
     const ids = new Set(input.taskIds);

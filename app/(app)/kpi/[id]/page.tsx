@@ -83,10 +83,21 @@ export default async function KpiDetail({ params }: { params: Promise<{ id: stri
           <CardContent className="text-sm space-y-2">
             <Row k="Mô tả" v={row.description ?? "—"} />
             <Row k="Cấp độ" v={<Badge variant="outline">{row.level}</Badge>} />
+            <Row k="Mode tính" v={<Badge variant="info">{row.calcMode}</Badge>} />
             <Row k="Tần suất" v={row.target_frequency} />
             <Row k="Trọng số" v={row.weight.toFixed(2)} />
             <Row k="KPI cha" v={parent ? <Link href={`/kpi/${parent.id}`} className="text-indigo-600">{parent.name}</Link> : "—"} />
             <Row k="Số KPI con" v={String(children.length)} />
+            {row.calcMode === "sum" && row.targetAlignmentDelta != null && (
+              <Row
+                k="Target con vs cha"
+                v={
+                  row.isTargetAligned
+                    ? "Khớp"
+                    : `Lệch ${row.targetAlignmentDelta.toLocaleString("vi-VN")} ${row.unit}`
+                }
+              />
+            )}
           </CardContent>
         </Card>
 

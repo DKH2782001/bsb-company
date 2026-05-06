@@ -1,4 +1,5 @@
 import * as demo from "@/lib/queries/demo";
+import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
 import { writeAuditLog } from "@/lib/repositories/audit";
 import { getAuthenticatedUser, getUserContext, withDemoFallback } from "@/lib/repositories/shared";
 
@@ -178,11 +179,42 @@ export async function resolveAlert(alertId: string) {
   });
 }
 
-export async function setApprovalStatus(approvalId: string, status: "approved" | "rejected" | "cancelled") {
+function shouldUseDemoStore() {
+  return isDemoMode() || !hasSupabaseEnv();
+}
+
+export async function setApprovalStatus(
+  approvalId: string,
+  status: "approved" | "rejected" | "cancelled",
+  note?: string,
+) {
   const [user, approvals] = await Promise.all([getAuthenticatedUser(), listApprovals()]);
   const context = await getUserContext(user);
   const approval = approvals.find((item) => item.id === approvalId);
   if (!approval || !context.companyId) return;
+
+  const decidedAt = new Date().toISOString();
+  const decidedBy = context.employeeId ?? demo.DEMO_AUTH_USER_ID;
+  const after = {
+    ...approval,
+    status,
+    decided_by: decidedBy,
+    decided_at: decidedAt,
+    decision_note: note?.trim() || null,
+  };
+
+  if (shouldUseDemoStore()) {
+    const idx = demo.demoApprovals.findIndex((item) => item.id === approvalId);
+    if (idx >= 0) demo.demoApprovals[idx] = after;
+    await writeAuditLog({
+      action: `approval.${status}`,
+      entity: "approvals",
+      entityId: approvalId,
+      before: approval,
+      after,
+    });
+    return;
+  }
 
   const db = await import("@/lib/repositories/shared").then((mod) => mod.getDbClientOrThrow());
   const approvalsTable = db.from("approvals") as unknown as {
@@ -203,6 +235,6 @@ export async function setApprovalStatus(approvalId: string, status: "approved" |
     entity: "approvals",
     entityId: approvalId,
     before: approval,
-    after: { ...approval, status },
+    after,
   });
 }

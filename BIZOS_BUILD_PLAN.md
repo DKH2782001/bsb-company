@@ -220,6 +220,17 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 >   - Trang [/leave/settings](app/(app)/leave/settings/page.tsx): CRUD leave_types + holidays + nút "Import lịch lễ VN" (preset 6 ngày, year-aware)
 >   - Sidebar nav: thêm "Nghỉ phép" trong nhóm People
 >   - Audit log: `leave.request.submit/approve/reject/cancel`, `leave.type.upsert/delete`, `leave.holiday.upsert/delete/import_vn`
+> - [x] **Approval Center Phase 1** — Queue MVP / demo-safe ✅
+>   - Trang [/approvals](app/(app)/approvals/page.tsx): filter theo trạng thái, loại request, từ khóa; danh sách pending/approved/rejected/cancelled
+>   - Approve/reject có `decision_note`, `decided_at`, `decided_by`; demo mode lưu trạng thái ngay trong mock store để test được sau khi bấm
+>   - Audit log: `approval.approved/rejected` ghi before/after gồm ghi chú quyết định
+>   - Chưa làm trong phase này: routing nhiều cấp, reassign, delegation, bulk approve, rule theo amount/type/department
+> - [x] **KPI Execution Phase 2** — Personal KPI Execution theo task có trọng số ✅
+>   - Thay bảng Employee Execution bằng Personal KPI Execution: group task theo nhân sự/tháng, tính `SUM(task_weight * completion_percent / 100) / SUM(task_weight) * 100`
+>   - Thêm helper [lib/kpi/personalExecution.ts](lib/kpi/personalExecution.ts) + test case Hiếu: weight 7/3, completion 80%/100% => Personal KPI 86%
+>   - Task có thêm `task_weight`; create/update task và modal task detail cho phép Lead nhập trọng số, mục tiêu cần đạt, kết quả thực tế
+>   - UI có expanded detail theo nhân sự: Task, KPI, Action Plan, Weight, Completion %, Weighted Score, Status, Due Date, Lead/Owner
+>   - [x] Update: bỏ nhập tay Completion %, hệ thống tự tính từ `action_actual_value / action_target_value * 100`; cho phép vượt 100%, task done nhưng thiếu actual vẫn tính 0%
 > - [~] ~~Đợt 1E~~ — Selfie verification + Storage bucket `attendance` (bỏ — không làm)
 > - [x] **Đợt 1F** — Bảng công cuối tháng + lock/unlock ✅
 >   - Migration `20260427170000_attendance_monthly_timesheets.sql`: thêm `attendance_monthly_periods`, `attendance_monthly_rows`, enum trạng thái + RLS/write policies cho CEO/HR Admin.

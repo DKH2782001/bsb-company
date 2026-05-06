@@ -19,7 +19,7 @@ export default async function LoginPage({
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-bold text-[var(--text-strong)]">{t("common.login")}</h2>
-        <p className="text-sm text-[var(--text-soft)] mt-1">{t("auth.welcome")}</p>
+        <p className="mt-1 text-sm text-[var(--text-soft)]">{t("auth.welcome")}</p>
       </div>
 
       {registered && (
@@ -37,13 +37,16 @@ export default async function LoginPage({
           {error}
         </div>
       )}
+
       {demoMode && (
-        <div className="rounded-lg border border-[var(--info-border)] bg-[var(--info-bg)] p-3 text-sm text-[var(--info-text)]">
-          Demo mode đang bật. Không cần đăng nhập, anh có thể vào thẳng{" "}
-          <Link href="/dashboard" className="font-medium underline">
-            dashboard
+        <div className="space-y-3 rounded-lg border border-[var(--info-border)] bg-[var(--info-bg)] p-3 text-sm text-[var(--info-text)]">
+          <div>Demo mode dang bat. Khong can dang nhap Supabase, co the vao thang dashboard de test.</div>
+          <Link
+            href="/dashboard"
+            className="flex h-11 w-full items-center justify-center rounded-2xl bg-[var(--brand-600)] px-4 text-sm font-semibold text-white shadow-sm"
+          >
+            Vao dashboard demo
           </Link>
-          .
         </div>
       )}
 
@@ -51,7 +54,14 @@ export default async function LoginPage({
         <input type="hidden" name="next" value={next ?? "/dashboard"} />
         <div className="space-y-1.5">
           <Label htmlFor="email">{t("auth.labelEmail")}</Label>
-          <Input id="email" name="email" type="email" placeholder="you@company.com" required />
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            placeholder="you@company.com"
+            defaultValue={demoMode ? "ceo@bizos.demo" : ""}
+            required={!demoMode}
+          />
         </div>
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
@@ -60,16 +70,22 @@ export default async function LoginPage({
               {t("auth.forgot")}
             </Link>
           </div>
-          <Input id="password" name="password" type="password" required />
+          <Input
+            id="password"
+            name="password"
+            type="password"
+            defaultValue={demoMode ? "demo123456" : ""}
+            required={!demoMode}
+          />
         </div>
         <Button type="submit" className="w-full">
-          {t("common.login")}
+          {demoMode ? "Vao demo" : t("common.login")}
         </Button>
       </form>
 
       <div className="text-center text-sm text-[var(--text-soft)]">
         {t("auth.noAccount")}{" "}
-        <Link href="/signup" className="text-[var(--brand-600)] font-medium hover:underline">
+        <Link href="/signup" className="font-medium text-[var(--brand-600)] hover:underline">
           {t("common.signup")}
         </Link>
       </div>

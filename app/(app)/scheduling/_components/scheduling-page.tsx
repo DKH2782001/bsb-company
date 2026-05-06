@@ -25,14 +25,103 @@ function buildWeekDates(weekStart: string): string[] {
   return dates;
 }
 
+function SchedulingCoverageSummary({
+  weekDates,
+  templates,
+  shifts,
+}: {
+  weekDates: string[];
+  templates: SchedulingPageData["templates"];
+  shifts: SchedulingPageData["shifts"];
+}) {
+  const activeShifts = shifts.filter((shift) => shift.status !== "cancelled");
+  const totalAssigned = activeShifts.length;
+  const totalRequired = weekDates.reduce(
+    (sum) => sum + templates.reduce((daySum, tpl) => daySum + tpl.minStaff, 0),
+    0,
+  );
+  const understaffed = weekDates.flatMap((date) =>
+    templates.filter((tpl) => activeShifts.filter((shift) => shift.date === date && shift.templateId === tpl.id).length < tpl.minStaff),
+  ).length;
+
+  return (
+    <section className="mb-4 rounded-2xl border bg-white p-4" style={{ borderColor: "var(--line-soft)" }}>
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-sm font-semibold" style={{ color: "var(--text-strong)" }}>Lich tong theo ca</h2>
+          <p className="text-xs" style={{ color: "var(--text-soft)" }}>
+            Dashboard tong de lead kiem tra moi ngay/ca da du nguoi hay chua.
+          </p>
+        </div>
+        <div className="flex gap-2 text-xs">
+          <span className="rounded-full bg-indigo-50 px-2.5 py-1 text-indigo-700">{totalAssigned}/{totalRequired} slots</span>
+          <span className={`rounded-full px-2.5 py-1 ${understaffed ? "bg-red-50 text-red-700" : "bg-emerald-50 text-emerald-700"}`}>
+            {understaffed} thieu nguoi
+          </span>
+        </div>
+      </div>
+      <div className="overflow-x-auto">
+        <div className="min-w-[760px] rounded-xl border" style={{ borderColor: "var(--line-soft)" }}>
+          <div className="grid" style={{ gridTemplateColumns: `160px repeat(${weekDates.length}, minmax(78px, 1fr))` }}>
+            <div className="border-b px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--line-soft)", color: "var(--text-soft)" }}>
+              Shift
+            </div>
+            {weekDates.map((date) => (
+              <div key={date} className="border-b px-3 py-2 text-xs font-semibold" style={{ borderColor: "var(--line-soft)", color: "var(--text-soft)" }}>
+                {date.slice(5)}
+              </div>
+            ))}
+            {templates.map((tpl) => (
+              <div key={tpl.id} className="contents">
+                <div className="border-b px-3 py-2 text-xs font-medium" style={{ borderColor: "var(--line-soft)", color: "var(--text-strong)" }}>
+                  <span className="mr-2 inline-block h-2 w-2 rounded-full" style={{ background: tpl.color }} />
+                  {tpl.shortLabel ?? tpl.name}
+                </div>
+                {weekDates.map((date) => {
+                  const count = activeShifts.filter((shift) => shift.date === date && shift.templateId === tpl.id).length;
+                  const ok = count >= tpl.minStaff;
+                  return (
+                    <div key={`${tpl.id}-${date}`} className="border-b px-3 py-2 text-xs" style={{ borderColor: "var(--line-soft)" }}>
+                      <span className={`rounded-full px-2 py-1 font-semibold ${ok ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>
+                        {count}/{tpl.minStaff}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export function SchedulingPageClient({ data }: Props) {
   const [roleFilter, setRoleFilter] = useState<string | null>(null);
+  const [departmentFilter, setDepartmentFilter] = useState<string | null>(null);
 
   const { employees, templates, shifts, unavailabilities, period, weekStart, weekEnd, pendingSwapCount } = data;
   const weekDates = buildWeekDates(weekStart);
 
   const availableRoles = [...new Set(employees.map((e) => e.role).filter(Boolean))];
-  const filteredEmployees = roleFilter ? employees.filter((e) => e.role === roleFilter) : employees;
+  const availableDepartments = Array.from(
+    new Map(employees.map((e) => [e.departmentId ?? "none", { id: e.departmentId ?? "none", name: e.departmentName }])).values(),
+  );
+  const filteredEmployees = employees.filter((employee) => {
+    const matchesRole = roleFilter ? employee.role === roleFilter : true;
+    const matchesDepartment = departmentFilter ? (employee.departmentId ?? "none") === departmentFilter : true;
+    return matchesRole && matchesDepartment;
+  });
+  const groupedEmployees = Array.from(
+    filteredEmployees.reduce((map, employee) => {
+      const id = employee.departmentId ?? "none";
+      const current = map.get(id) ?? { id, name: employee.departmentName, employees: [] as typeof filteredEmployees };
+      current.employees.push(employee);
+      map.set(id, current);
+      return map;
+    }, new Map<string, { id: string; name: string; employees: typeof filteredEmployees }>()),
+  ).map(([, group]) => group);
 
   const actionButtons = (
     <>
@@ -89,6 +178,9 @@ export function SchedulingPageClient({ data }: Props) {
         roleFilter={roleFilter}
         onRoleFilter={setRoleFilter}
         availableRoles={availableRoles}
+        departmentFilter={departmentFilter}
+        onDepartmentFilter={setDepartmentFilter}
+        availableDepartments={availableDepartments}
         actions={actionButtons}
       />
 
@@ -102,7 +194,18 @@ export function SchedulingPageClient({ data }: Props) {
           pendingSwapCount={pendingSwapCount}
         />
 
-        <div className="overflow-x-auto">
+        <SchedulingCoverageSummary weekDates={weekDates} templates={templates} shifts={shifts} />
+
+        <div className="mb-3 rounded-2xl border bg-white px-4 py-3" style={{ borderColor: "var(--line-soft)" }}>
+          <div className="text-sm font-semibold" style={{ color: "var(--text-strong)" }}>
+            Calendar board xep ca
+          </div>
+          <div className="mt-1 text-xs" style={{ color: "var(--text-soft)" }}>
+            Chon phong ban, sau do bam dau + tai o nhan su/ngay de dien ca lam. Board duoi day duoc chia theo phong ban.
+          </div>
+        </div>
+
+        <div className="space-y-5">
           {templates.length === 0 ? (
             <div
               className="rounded-xl border p-8 text-center text-sm"
@@ -114,14 +217,24 @@ export function SchedulingPageClient({ data }: Props) {
               </Link>
             </div>
           ) : (
-            <SchedulingGrid
-              employees={filteredEmployees}
-              weekDates={weekDates}
-              shifts={shifts}
-              templates={templates}
-              unavailabilities={unavailabilities}
-              weekStart={weekStart}
-            />
+            groupedEmployees.map((group) => (
+              <section key={group.id} className="overflow-x-auto">
+                <div className="mb-2 flex items-center justify-between">
+                  <h3 className="text-sm font-semibold" style={{ color: "var(--text-strong)" }}>{group.name}</h3>
+                  <span className="rounded-full bg-zinc-100 px-2.5 py-1 text-xs text-zinc-600">
+                    {group.employees.length} nhan su
+                  </span>
+                </div>
+                <SchedulingGrid
+                  employees={group.employees}
+                  weekDates={weekDates}
+                  shifts={shifts}
+                  templates={templates}
+                  unavailabilities={unavailabilities}
+                  weekStart={weekStart}
+                />
+              </section>
+            ))
           )}
         </div>
       </div>

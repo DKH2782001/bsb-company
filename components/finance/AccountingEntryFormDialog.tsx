@@ -95,6 +95,10 @@ export function AccountingEntryFormDialog({ open, onClose, entry, departments, o
         </>
       }
     >
+      <div className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm text-indigo-900">
+        Thu: dùng TK 511 và nhập số tiền ở Credit. Chi phí: dùng TK 632/641/642 và nhập số tiền ở Debit.
+        Payroll cost lấy từ module lương, không nhập lẫn vào doanh thu.
+      </div>
       <form id="ae-form" onSubmit={onSubmit} className="grid gap-4 sm:grid-cols-2">
         <FormField label="Account code" htmlFor="accountCode" required error={errors.accountCode?.message}>
           <Input id="accountCode" {...register("accountCode")} placeholder="511" />

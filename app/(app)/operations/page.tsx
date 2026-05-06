@@ -9,17 +9,37 @@ import { KpiHeroDonut } from "@/components/kpi/KpiHeroDonut";
 import { MiniCalendar } from "@/components/widgets/MiniCalendar";
 import { ActivityFeed } from "@/components/widgets/ActivityFeed";
 import { ProgressList } from "@/components/widgets/ProgressList";
-import { fetchTasks, fetchEmployees, fetchKpis, fetchDepartments } from "@/lib/queries";
+import {
+  fetchActionMetrics,
+  fetchActionPlans,
+  fetchDepartmentResultKpis,
+  fetchTasks,
+  fetchEmployees,
+  fetchKpis,
+  fetchDepartments,
+} from "@/lib/queries";
 import { listSprints, listAllTaskResults } from "@/lib/repositories/operations";
 import { createTaskAction } from "@/app/(app)/workspace/actions";
 import { CheckCircle2, AlertTriangle, Target, ListChecks, Zap, Wrench, Plus, ChevronDown } from "lucide-react";
 import { DeadlineCalendar } from "./DeadlineCalendar";
 import { isTaskOverdue } from "./sprint-utils";
 import { OperationsBoard } from "./OperationsBoard";
+import { TaskExecutionInputs } from "./TaskExecutionInputs";
 
 export default async function OperationsPage() {
   const { t } = await tServer();
-  const [tasks, employees, kpis, departments, sprints, taskResults] = await Promise.all([fetchTasks(), fetchEmployees(), fetchKpis(), fetchDepartments(), listSprints(), listAllTaskResults()]);
+  const [tasks, employees, kpis, departments, sprints, taskResults, resultKpis, actionPlans, actionMetrics] =
+    await Promise.all([
+      fetchTasks(),
+      fetchEmployees(),
+      fetchKpis(),
+      fetchDepartments(),
+      listSprints(),
+      listAllTaskResults(),
+      fetchDepartmentResultKpis(),
+      fetchActionPlans(),
+      fetchActionMetrics(),
+    ]);
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const today = new Date();
@@ -112,7 +132,7 @@ export default async function OperationsPage() {
               <form action={createTaskAction} className="grid gap-3 md:grid-cols-3">
                 <Input name="title" placeholder="Tên task" required />
                 <select name="assigneeId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                  <option value="">Assignee</option>
+                  <option value="">Người phụ trách</option>
                   {employees.map((e) => (
                     <option key={e.id} value={e.id}>{e.full_name}</option>
                   ))}
@@ -123,19 +143,43 @@ export default async function OperationsPage() {
                     <option key={kpi.id} value={kpi.id}>{kpi.code ?? kpi.name}</option>
                   ))}
                 </select>
+                <select name="linkedActionPlanId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
+                  <option value="">Action Plan</option>
+                  {actionPlans.map((plan) => {
+                    const kpi = kpis.find((item) => item.id === plan.linked_kpi_id) ?? resultKpis.find((item) => item.id === plan.linked_kpi_id);
+                    const kpiLabel = kpi && "code" in kpi ? (kpi.code ?? kpi.name) : (kpi?.name ?? "KPI");
+                    return (
+                      <option key={plan.id} value={plan.id}>
+                        {kpiLabel} - {plan.title}
+                      </option>
+                    );
+                  })}
+                </select>
+                <select name="actionMetricId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
+                  <option value="">Chỉ số đo lường</option>
+                  {actionMetrics.map((metric) => {
+                    const plan = actionPlans.find((item) => item.id === metric.action_plan_id);
+                    return (
+                      <option key={metric.id} value={metric.id}>
+                        {(plan?.title ?? "Plan")} - {metric.name}
+                      </option>
+                    );
+                  })}
+                </select>
                 <Input name="dueDate" type="date" />
                 <select name="priority" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                  <option value="normal">Priority</option>
+                  <option value="normal">Mức ưu tiên</option>
                   <option value="low">Low</option>
                   <option value="high">High</option>
                   <option value="urgent">Urgent</option>
                 </select>
                 <select name="taskType" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
-                  <option value="growth">Growth</option>
+                  <option value="growth">Chiều hướng tốt</option>
                   <option value="maintenance">Maintenance</option>
                   <option value="admin">Admin</option>
                   <option value="urgent">Urgent task</option>
                 </select>
+                <TaskExecutionInputs />
                 <Button type="submit" className="md:col-span-3">Tạo task</Button>
               </form>
             </CardContent>
@@ -173,6 +217,9 @@ export default async function OperationsPage() {
           sprints={sprints}
           employees={employees}
           kpis={kpis}
+          resultKpis={resultKpis}
+          actionPlans={actionPlans}
+          actionMetrics={actionMetrics}
           departments={departments}
           taskResults={taskResults}
           kpiLinkPct={kpiLinkPct}

@@ -113,6 +113,38 @@ export default async function FinancePage() {
         />
       </div>
 
+      <Card className="mb-6 border-indigo-100 bg-indigo-50/40">
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Luồng thu / chi đang dùng cho P&amp;L</CardTitle>
+        </CardHeader>
+        <CardContent className="grid gap-3 text-sm md:grid-cols-3">
+          <div className="rounded-2xl bg-white p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-emerald-600">Thu</div>
+            <div className="mt-1 font-semibold text-zinc-900">TK 511 credit - Doanh thu</div>
+            <div className="mt-2 text-zinc-600">
+              Bút toán có TK 511 và phát sinh Có được cộng vào doanh thu. Đây là nguồn cho KPI doanh thu và P&amp;L.
+            </div>
+            <div className="mt-3 text-lg font-bold text-emerald-700">{formatVND(revenue)}</div>
+          </div>
+          <div className="rounded-2xl bg-white p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-red-600">Chi vận hành</div>
+            <div className="mt-1 font-semibold text-zinc-900">TK 632 / 641 / 642 debit</div>
+            <div className="mt-2 text-zinc-600">
+              Giá vốn, chi phí bán hàng và chi phí quản lý được lấy từ phát sinh Nợ của các tài khoản chi phí.
+            </div>
+            <div className="mt-3 text-lg font-bold text-red-700">{formatVND(cogs + sellingExp + adminExp)}</div>
+          </div>
+          <div className="rounded-2xl bg-white p-4">
+            <div className="text-xs font-semibold uppercase tracking-wide text-amber-600">Chi nhân sự</div>
+            <div className="mt-1 font-semibold text-zinc-900">Payroll company cost</div>
+            <div className="mt-2 text-zinc-600">
+              Chi phí lương không nhập lẫn vào doanh thu. Hệ thống lấy từ payroll cost và cộng vào OPEX.
+            </div>
+            <div className="mt-3 text-lg font-bold text-amber-700">{formatVND(payrollExp)}</div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="mb-6">
         <CardHeader>
           <CardTitle className="text-sm">Bút toán kế toán</CardTitle>

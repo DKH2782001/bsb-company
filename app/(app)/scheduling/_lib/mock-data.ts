@@ -16,6 +16,8 @@ export type MockEmployee = {
   name: string;
   initials: string;
   role: string;
+  departmentId?: string | null;
+  departmentName?: string;
   isPartTime: boolean;
   avatarGradient: string;
   maxHoursWeek: number;

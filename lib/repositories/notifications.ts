@@ -1,5 +1,5 @@
 import * as demo from "@/lib/queries/demo";
-import { hasSupabaseEnv } from "@/lib/env";
+import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
 import { getAuthenticatedUser, getDbClientOrThrow, getServiceClient, getUserContext } from "@/lib/repositories/shared";
 import type { Notification } from "@/types/domain";
 
@@ -8,7 +8,7 @@ function genId(prefix: string) {
 }
 
 function shouldUseDemoStore() {
-  return !hasSupabaseEnv();
+  return isDemoMode() || !hasSupabaseEnv();
 }
 
 /** Trả notifications của user hiện tại (mới nhất trước). */

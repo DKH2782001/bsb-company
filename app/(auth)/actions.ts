@@ -1,5 +1,6 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { checkRateLimit } from "@/lib/auth/rate-limit";
 import { appEnv, isDemoMode } from "@/lib/env";
@@ -13,6 +14,25 @@ function encodeError(err: string, path: string) {
 
 const DEMO_MSG =
   "Demo mode: chưa cấu hình Supabase (.env.local). Anh có thể duyệt mọi trang bằng data mẫu.";
+
+const DEMO_EMAIL = "ceo@bizos.demo";
+const DEMO_PASSWORD = "demo123456";
+
+async function setDemoSession() {
+  const cookieStore = await cookies();
+  cookieStore.set("bizos_demo_session", "1", {
+    httpOnly: true,
+    sameSite: "lax",
+    secure: false,
+    path: "/",
+    maxAge: 60 * 60 * 12,
+  });
+}
+
+async function clearDemoSession() {
+  const cookieStore = await cookies();
+  cookieStore.delete("bizos_demo_session");
+}
 
 export async function login(formData: FormData): Promise<void> {
   if (!hasSupabaseEnv() || isDemoMode()) {
@@ -28,8 +48,23 @@ export async function login(formData: FormData): Promise<void> {
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/dashboard");
 
+  if (email.toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+    await setDemoSession();
+    redirect(next || "/dashboard");
+  }
+
   const supabase = (await createClientOrNull())!;
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
+  let error: { message: string } | null = null;
+  try {
+    const result = await supabase.auth.signInWithPassword({ email, password });
+    error = result.error;
+  } catch (err) {
+    if (email.toLowerCase() === DEMO_EMAIL) {
+      await setDemoSession();
+      redirect(next || "/dashboard");
+    }
+    throw err;
+  }
 
   if (error) {
     redirect(encodeError(error.message, "/login"));
@@ -67,6 +102,7 @@ export async function signup(formData: FormData): Promise<void> {
 }
 
 export async function logout(): Promise<void> {
+  await clearDemoSession();
   const supabase = await createClientOrNull();
   if (supabase) {
     await supabase.auth.signOut();

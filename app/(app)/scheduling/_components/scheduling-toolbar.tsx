@@ -17,6 +17,9 @@ type Props = {
   roleFilter: string | null;
   onRoleFilter: (role: string | null) => void;
   availableRoles: string[];
+  departmentFilter: string | null;
+  onDepartmentFilter: (departmentId: string | null) => void;
+  availableDepartments: Array<{ id: string; name: string }>;
   actions?: React.ReactNode;
 };
 
@@ -39,6 +42,9 @@ export function SchedulingToolbar({
   roleFilter,
   onRoleFilter,
   availableRoles,
+  departmentFilter,
+  onDepartmentFilter,
+  availableDepartments,
   actions,
 }: Props) {
   const router = useRouter();
@@ -131,6 +137,22 @@ export function SchedulingToolbar({
       )}
 
       <div className="flex-1" />
+
+      {/* Role filter */}
+      {availableDepartments.length > 0 && (
+        <select
+          value={departmentFilter ?? ""}
+          onChange={(e) => onDepartmentFilter(e.target.value || null)}
+          className="h-8 rounded-lg border bg-white px-2.5 text-[12px]"
+          style={{ borderColor: "var(--line-soft)", color: "var(--text-strong)" }}
+          aria-label="Loc phong ban"
+        >
+          <option value="">Tat ca phong ban</option>
+          {availableDepartments.map((dept) => (
+            <option key={dept.id} value={dept.id}>{dept.name}</option>
+          ))}
+        </select>
+      )}
 
       {/* Role filter */}
       {availableRoles.length > 0 && (

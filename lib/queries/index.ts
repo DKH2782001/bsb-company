@@ -1,7 +1,7 @@
 import { cache } from "react";
 import * as demo from "./demo";
 import { listDepartments, listEmployees, getCompany } from "@/lib/repositories/org";
-import { listKpis, listKpiActuals, listKpiTargets } from "@/lib/repositories/kpi";
+import { listKpis, listKpiActuals, listKpiTargets, listKpiFormulas } from "@/lib/repositories/kpi";
 import { listTasks } from "@/lib/repositories/operations";
 import { listPayrollEntries } from "@/lib/repositories/compensation";
 import { listProjects } from "@/lib/repositories/projects";
@@ -17,6 +17,12 @@ import { listSops } from "@/lib/repositories/knowledge";
 import { listRequisitions } from "@/lib/repositories/recruiting";
 import { getProfileScreenData } from "@/lib/repositories/profile";
 import { withDemoFallback } from "@/lib/repositories/shared";
+import {
+  executionDemoActionMetrics,
+  executionDemoActionPlans,
+  executionDemoDepartmentResultKpis,
+  executionDemoEmployeeExecutions,
+} from "@/lib/queries/kpiExecutionDemo";
 
 export const fetchEmployees = cache(() => listEmployees());
 export const fetchDepartments = cache(() => listDepartments());
@@ -24,6 +30,7 @@ export const fetchCompany = cache(() => getCompany());
 export const fetchKpis = cache(() => listKpis());
 export const fetchKpiActuals = cache((period = "2026-04") => listKpiActuals(period));
 export const fetchKpiTargets = cache((period = "2026-04") => listKpiTargets(period));
+export const fetchKpiFormulas = cache(() => listKpiFormulas());
 export const fetchTasks = cache(() => listTasks());
 export const fetchPayroll = cache(() => listPayrollEntries());
 export const fetchProjects = cache(() => listProjects());
@@ -52,5 +59,10 @@ export const fetchKeyResults = cache(() =>
     return data ?? [];
   }),
 );
+
+export const fetchDepartmentResultKpis = cache(() => executionDemoDepartmentResultKpis);
+export const fetchActionPlans = cache(() => executionDemoActionPlans);
+export const fetchActionMetrics = cache(() => executionDemoActionMetrics);
+export const fetchEmployeeExecutions = cache(() => executionDemoEmployeeExecutions);
 
 export { demo };

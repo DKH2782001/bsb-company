@@ -51,6 +51,7 @@ import {
   type AccountingEntryUpsertInput,
 } from "@/lib/validation/schemas";
 import { actionErr, actionOk, zodToFieldErrors, type ActionResult } from "@/lib/actions/result";
+import { upsertExecutionDemoActionPlan } from "@/lib/queries/kpiExecutionDemo";
 
 export async function createDepartmentAction(formData: FormData) {
   await createDepartment({
@@ -104,11 +105,20 @@ export async function recordKpiActualAction(formData: FormData) {
 
 export async function createTaskAction(formData: FormData) {
   const storyPointsRaw = formData.get("storyPoints");
+  const actionTargetRaw = formData.get("actionTargetValue");
+  const actionActualRaw = formData.get("actionActualValue");
+  const taskWeightRaw = formData.get("taskWeight");
   await createTask({
     title: String(formData.get("title") ?? ""),
     assigneeId: String(formData.get("assigneeId") ?? ""),
     departmentId: String(formData.get("departmentId") ?? ""),
     linkedKpiId: String(formData.get("linkedKpiId") ?? ""),
+    linkedActionPlanId: String(formData.get("linkedActionPlanId") ?? ""),
+    actionMetricId: String(formData.get("actionMetricId") ?? ""),
+    actionTargetValue: actionTargetRaw && String(actionTargetRaw) !== "" ? Number(actionTargetRaw) : undefined,
+    actionActualValue: actionActualRaw && String(actionActualRaw) !== "" ? Number(actionActualRaw) : undefined,
+    taskWeight: taskWeightRaw && String(taskWeightRaw) !== "" ? Number(taskWeightRaw) : undefined,
+    progressUnit: String(formData.get("progressUnit") ?? ""),
     dueDate: String(formData.get("dueDate") ?? ""),
     priority: String(formData.get("priority") ?? "normal") as "low" | "normal" | "high" | "urgent",
     taskType: String(formData.get("taskType") ?? "growth") as "growth" | "maintenance" | "admin" | "urgent",
@@ -156,6 +166,10 @@ export async function updateTaskAction(formData: FormData) {
   if (departmentId !== null) input.departmentId = String(departmentId) || null;
   const linkedKpiId = formData.get("linkedKpiId");
   if (linkedKpiId !== null) input.linkedKpiId = String(linkedKpiId) || null;
+  const linkedActionPlanId = formData.get("linkedActionPlanId");
+  if (linkedActionPlanId !== null) input.linkedActionPlanId = String(linkedActionPlanId) || null;
+  const actionMetricId = formData.get("actionMetricId");
+  if (actionMetricId !== null) input.actionMetricId = String(actionMetricId) || null;
   const dueDate = formData.get("dueDate");
   if (dueDate !== null) input.dueDate = String(dueDate) || null;
   const priority = formData.get("priority");
@@ -172,6 +186,20 @@ export async function updateTaskAction(formData: FormData) {
   if (storyPoints !== null && String(storyPoints) !== "") input.storyPoints = Number(storyPoints);
   const sprintId = formData.get("sprintId");
   if (sprintId !== null) input.sprintId = String(sprintId) || null;
+  const actionTargetValue = formData.get("actionTargetValue");
+  if (actionTargetValue !== null) input.actionTargetValue = String(actionTargetValue) === "" ? null : Number(actionTargetValue);
+  const actionActualValue = formData.get("actionActualValue");
+  if (actionActualValue !== null) input.actionActualValue = String(actionActualValue) === "" ? null : Number(actionActualValue);
+  const taskWeight = formData.get("taskWeight");
+  if (taskWeight !== null) input.taskWeight = String(taskWeight) === "" ? null : Number(taskWeight);
+  const progressUnit = formData.get("progressUnit");
+  if (progressUnit !== null) input.progressUnit = String(progressUnit) || null;
+  const qualityScore = formData.get("qualityScore");
+  if (qualityScore !== null) input.qualityScore = String(qualityScore) === "" ? null : Number(qualityScore);
+  const slaScore = formData.get("slaScore");
+  if (slaScore !== null) input.slaScore = String(slaScore) === "" ? null : Number(slaScore);
+  const blockedReason = formData.get("blockedReason");
+  if (blockedReason !== null) input.blockedReason = String(blockedReason) || null;
 
   await updateTask(input as Parameters<typeof updateTask>[0]);
   revalidatePath("/operations");
@@ -395,7 +423,7 @@ export async function upsertKpiAction(raw: KpiUpsertInput): Promise<ActionResult
       revalidatePath(`/kpi/${parsed.id}`);
       return actionOk({ id: parsed.id }, "Đã cập nhật KPI.");
     }
-    await createKpi({
+    const id = await createKpi({
       name: parsed.name,
       code: parsed.code ?? "",
       level: parsed.level,
@@ -408,7 +436,7 @@ export async function upsertKpiAction(raw: KpiUpsertInput): Promise<ActionResult
       period: parsed.period,
     });
     revalidatePath("/kpi");
-    return actionOk(undefined, "Đã tạo KPI mới.");
+    return actionOk({ id }, "Đã tạo KPI mới.");
   } catch (err) {
     return actionErr(errorMessage(err, "Không thể lưu KPI."));
   }
@@ -426,6 +454,32 @@ export async function deleteKpiAction(id: string): Promise<ActionResult> {
 }
 
 // ─── Project ──────────────────────────────────────────────────────────────
+export async function upsertActionPlanAction(formData: FormData): Promise<ActionResult<{ id?: string }>> {
+  const linkedKpiId = String(formData.get("linkedKpiId") ?? "");
+  const title = String(formData.get("title") ?? "");
+  if (!linkedKpiId) return actionErr("Thieu KPI de gan Action Plan.");
+  if (!title.trim()) return actionErr("Thieu ten Action Plan.");
+
+  try {
+    const id = upsertExecutionDemoActionPlan({
+      id: String(formData.get("id") ?? "") || undefined,
+      linkedKpiId,
+      title,
+      description: String(formData.get("description") ?? ""),
+      ownerId: String(formData.get("ownerId") ?? ""),
+      departmentId: String(formData.get("departmentId") ?? ""),
+      period: String(formData.get("period") ?? "2026-04"),
+      status: String(formData.get("status") ?? "active") as Parameters<typeof upsertExecutionDemoActionPlan>[0]["status"],
+      expectedImpactText: String(formData.get("expectedImpactText") ?? ""),
+      progressPercent: Number(formData.get("progressPercent") ?? 0),
+    });
+    revalidatePath("/kpi");
+    return actionOk({ id }, "Da luu Action Plan.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Khong the luu Action Plan."));
+  }
+}
+
 export async function upsertProjectAction(raw: ProjectUpsertInput): Promise<ActionResult<{ id?: string }>> {
   let parsed;
   try {

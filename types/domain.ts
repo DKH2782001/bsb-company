@@ -57,6 +57,7 @@ export type Employee = {
 };
 
 export type KpiLevel = "company" | "department" | "team" | "employee";
+export type KpiCalcMode = "sum" | "ratio" | "formula" | "manual";
 
 export type Kpi = {
   id: string;
@@ -74,6 +75,7 @@ export type Kpi = {
   data_source: string | null;
   active: boolean;
   target_frequency: "daily" | "weekly" | "monthly" | "quarterly" | "yearly";
+  calc_mode?: KpiCalcMode | null;
 };
 
 export type KpiFormulaDef =
@@ -98,6 +100,85 @@ export type KpiTarget = {
   target_value: number;
 };
 
+export type KpiFormula = {
+  kpi_id: string;
+  formula_type: string;
+  definition: KpiFormulaDef;
+};
+
+export type ExecutionStatus = "green" | "yellow" | "red";
+
+export type DepartmentResultKpi = {
+  id: string;
+  name: string;
+  department_id: string;
+  department_name: string;
+  period: string;
+  type: "result_kpi";
+  unit: string;
+  target: number;
+  actual: number;
+  data_source: string;
+  rollup_mode: "manual" | "third_party" | "import";
+  status: ExecutionStatus;
+  days_left: number;
+  last_updated_at: string;
+};
+
+export type ActionPlanStatus = "draft" | "active" | "completed" | "paused";
+
+export type ActionPlan = {
+  id: string;
+  linked_kpi_id: string;
+  title: string;
+  description: string;
+  owner_id: string;
+  department_id: string;
+  period: string;
+  status: ActionPlanStatus;
+  expected_impact_text: string;
+  progress_percent: number;
+  total_tasks: number;
+  completed_tasks: number;
+  overdue_tasks: number;
+  blocked_tasks: number;
+};
+
+export type ActionMetric = {
+  id: string;
+  action_plan_id: string;
+  name: string;
+  unit: string;
+  target: number;
+  actual: number;
+  completion: number;
+  owner_id: string | null;
+  assignee_id: string | null;
+  status: ExecutionStatus;
+};
+
+export type EmployeeRiskStatus = "green" | "yellow" | "red";
+
+export type EmployeeExecution = {
+  employee_id: string;
+  employee_name: string;
+  role: string;
+  department_id: string;
+  linked_kpi_id: string;
+  linked_action_plan_id: string;
+  assigned_tasks: number;
+  done_tasks: number;
+  overdue_tasks: number;
+  blocked_tasks: number;
+  action_target_name: string;
+  action_target_value: number;
+  action_actual_value: number;
+  action_completion: number;
+  sla_score: number;
+  quality_score: number;
+  risk_status: EmployeeRiskStatus;
+};
+
 export type Task = {
   id: string;
   company_id: string;
@@ -108,15 +189,29 @@ export type Task = {
   department_id: string | null;
   project_id: string | null;
   linked_kpi_id: string | null;
+  linked_action_plan_id?: string | null;
+  action_metric_id?: string | null;
   priority: "low" | "normal" | "high" | "urgent";
   task_type: "growth" | "maintenance" | "admin" | "urgent";
   status: "todo" | "in_progress" | "blocked" | "review" | "done" | "cancelled";
+  start_date?: string | null;
   due_date: string | null;
   estimated_hours: number | null;
   actual_hours: number | null;
+  action_target_value?: number | null;
+  action_actual_value?: number | null;
+  task_weight?: number | null;
+  progress_unit?: string | null;
+  quality_score?: number | null;
+  sla_score?: number | null;
+  recurrence_rule?: string | null;
+  blocked_reason?: string | null;
+  completion_proof?: string | null;
   sprint_id: string | null;
   story_points: number | null;
   parent_task_id: string | null;
+  created_at?: string | null;
+  updated_at?: string | null;
 };
 
 export type TaskResult = {
@@ -128,6 +223,14 @@ export type TaskResult = {
   note: string | null;
   created_at: string;
   created_by: string | null;
+};
+
+export type TaskComment = {
+  id: string;
+  task_id: string;
+  author_id: string | null;
+  content: string;
+  created_at: string;
 };
 
 export type Sprint = {
@@ -213,6 +316,9 @@ export type Approval = {
   payload: Record<string, unknown>;
   status: "pending" | "approved" | "rejected" | "cancelled";
   requested_by: string | null;
+  decided_by?: string | null;
+  decided_at?: string | null;
+  decision_note?: string | null;
   created_at: string;
 };
 
