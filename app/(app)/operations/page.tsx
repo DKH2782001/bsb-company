@@ -18,8 +18,10 @@ import {
   fetchKpis,
   fetchDepartments,
 } from "@/lib/queries";
+import { listKpiTargets } from "@/lib/repositories/kpi";
 import { listSprints, listAllTaskResults } from "@/lib/repositories/operations";
-import { createTaskAction } from "@/app/(app)/workspace/actions";
+import { getSprintMonth } from "@/lib/kpi/sprintAllocation";
+import { createTaskFormAction } from "@/app/(app)/workspace/actions";
 import { CheckCircle2, AlertTriangle, Target, ListChecks, Zap, Wrench, Plus, ChevronDown } from "lucide-react";
 import { DeadlineCalendar } from "./DeadlineCalendar";
 import { isTaskOverdue } from "./sprint-utils";
@@ -40,6 +42,11 @@ export default async function OperationsPage() {
       fetchActionPlans(),
       fetchActionMetrics(),
     ]);
+
+  // KPI targets for tất cả tháng có sprint — phục vụ rule chia KPI tháng → sprint
+  const sprintMonths = Array.from(new Set(sprints.map((s) => getSprintMonth(s))));
+  const kpiTargetsArrays = await Promise.all(sprintMonths.map((m) => listKpiTargets(m)));
+  const kpiTargets = kpiTargetsArrays.flat();
 
   // ── Computed stats ──────────────────────────────────────────────────────────
   const today = new Date();
@@ -129,7 +136,7 @@ export default async function OperationsPage() {
           <Card>
             <CardHeader><CardTitle className="text-sm">Thông tin task</CardTitle></CardHeader>
             <CardContent>
-              <form action={createTaskAction} className="grid gap-3 md:grid-cols-3">
+              <form action={createTaskFormAction} className="grid gap-3 md:grid-cols-3">
                 <Input name="title" placeholder="Tên task" required />
                 <select name="assigneeId" className="h-11 rounded-2xl border border-[var(--line-soft)] bg-white px-3.5 text-sm text-[var(--text-strong)]">
                   <option value="">Người phụ trách</option>
@@ -217,6 +224,7 @@ export default async function OperationsPage() {
           sprints={sprints}
           employees={employees}
           kpis={kpis}
+          kpiTargets={kpiTargets}
           resultKpis={resultKpis}
           actionPlans={actionPlans}
           actionMetrics={actionMetrics}

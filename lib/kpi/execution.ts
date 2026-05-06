@@ -376,6 +376,11 @@ export function buildKpiExecutionSnapshots(input: {
   });
 }
 
+function currentPeriod(): string {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+}
+
 export function buildKpiExecutionPanels(input: {
   rows: KpiRow[];
   departmentKpis: DepartmentResultKpi[];
@@ -385,11 +390,19 @@ export function buildKpiExecutionPanels(input: {
   tasks: Task[];
   employees: Employee[];
   departments: Department[];
+  targets?: { kpi_id: string; period: string }[];
 }) {
   const employeeById = new Map(input.employees.map((employee) => [employee.id, employee]));
   const departmentById = new Map(input.departments.map((department) => [department.id, department]));
   const departmentResultById = new Map(input.departmentKpis.map((kpi) => [kpi.id, kpi]));
   const actionMetricById = new Map(input.actionMetrics.map((metric) => [metric.id, metric]));
+  // Lấy period mới nhất của từng KPI từ kpi_targets (sort desc).
+  const periodByKpiId = new Map<string, string>();
+  (input.targets ?? []).forEach((target) => {
+    const existing = periodByKpiId.get(target.kpi_id);
+    if (!existing || target.period > existing) periodByKpiId.set(target.kpi_id, target.period);
+  });
+  const fallbackPeriod = currentPeriod();
 
   return input.rows.map((row) => {
     const resultKpi = departmentResultById.get(row.id);
@@ -447,11 +460,12 @@ export function buildKpiExecutionPanels(input: {
             : null,
       };
     });
+    const rowPeriod = resultKpi?.period ?? periodByKpiId.get(row.id) ?? fallbackPeriod;
     const personalKpiExecution = calculatePersonalKpiExecution(enrichedTasks, {
       employees: input.employees,
       actionPlans: input.actionPlans,
-      month: resultKpi?.period ?? "2026-04",
-      today: `${resultKpi?.period ?? "2026-04"}-30`,
+      month: rowPeriod,
+      today: `${rowPeriod}-30`,
     });
 
     const doneTasks = enrichedTasks.filter((task) => task.status === "done").length;
@@ -552,7 +566,7 @@ export function buildKpiExecutionPanels(input: {
         level: row.level,
         department_id: row.owner_department_id,
         department_name: resultKpi?.department_name ?? (row.owner_department_id ? departmentById.get(row.owner_department_id)?.name ?? "—" : "Company"),
-        period: resultKpi?.period ?? "2026-04",
+        period: resultKpi?.period ?? periodByKpiId.get(row.id) ?? fallbackPeriod,
         type: resultKpi ? "result_kpi" : "kpi",
         unit: resultKpi?.unit ?? row.unit,
         target,

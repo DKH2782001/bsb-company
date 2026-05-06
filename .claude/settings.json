@@ -7,7 +7,21 @@
       "Bash(git -C \"c:/Users/pc/Desktop/CODE/bizos-company-os-main\" status --short)",
       "Bash(git -C c:/Users/pc/Desktop/CODE/bizos-company-os-main -c user.email=phong862002hn@gmail.com -c user.name=Hung commit -m ' *)",
       "Bash(gh repo *)",
-      "Bash(gh api *)"
+      "Bash(gh api *)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm typecheck *)",
+      "Bash(git stash *)",
+      "Bash(pnpm dev *)",
+      "Bash(tasklist)",
+      "Bash(taskkill //F //PID 27644)",
+      "Bash(node -e \"const m = require\\('./lib/queries/demo.ts'\\); console.log\\('keys', Object.keys\\(m\\).slice\\(0,10\\)\\);\")",
+      "Bash(curl -s -L http://localhost:3000/kpi)",
+      "Bash(curl -s -L --max-time 20 http://localhost:3000/kpi)",
+      "Bash(grep -oE \"\\(Tạo|Tao\\) KPI [^<]{0,20}\")",
+      "Read(//tmp/**)",
+      "Bash(curl -s -L --max-time 20 http://localhost:3000/kpi -o /tmp/kpi.html)",
+      "Bash(sort -k5 -n -r)",
+      "Bash(taskkill //F //PID 17296)"
     ]
   }
 }

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { ZodError } from "zod";
+import { RepositoryError } from "@/lib/repositories/shared";
 import {
   createDepartment,
   createEmployee,
@@ -103,29 +104,41 @@ export async function recordKpiActualAction(formData: FormData) {
   revalidatePath("/kpi");
 }
 
-export async function createTaskAction(formData: FormData) {
+// Wrapper trả về void — dùng cho HTML <form action={...}> không đọc result.
+// Lỗi sẽ bị swallow ở UI; chỉ dùng cho luồng inline bulk-create không có dialog.
+export async function createTaskFormAction(formData: FormData): Promise<void> {
+  await createTaskAction(formData);
+}
+
+export async function createTaskAction(formData: FormData): Promise<ActionResult> {
   const storyPointsRaw = formData.get("storyPoints");
   const actionTargetRaw = formData.get("actionTargetValue");
   const actionActualRaw = formData.get("actionActualValue");
   const taskWeightRaw = formData.get("taskWeight");
-  await createTask({
-    title: String(formData.get("title") ?? ""),
-    assigneeId: String(formData.get("assigneeId") ?? ""),
-    departmentId: String(formData.get("departmentId") ?? ""),
-    linkedKpiId: String(formData.get("linkedKpiId") ?? ""),
-    linkedActionPlanId: String(formData.get("linkedActionPlanId") ?? ""),
-    actionMetricId: String(formData.get("actionMetricId") ?? ""),
-    actionTargetValue: actionTargetRaw && String(actionTargetRaw) !== "" ? Number(actionTargetRaw) : undefined,
-    actionActualValue: actionActualRaw && String(actionActualRaw) !== "" ? Number(actionActualRaw) : undefined,
-    taskWeight: taskWeightRaw && String(taskWeightRaw) !== "" ? Number(taskWeightRaw) : undefined,
-    progressUnit: String(formData.get("progressUnit") ?? ""),
-    dueDate: String(formData.get("dueDate") ?? ""),
-    priority: String(formData.get("priority") ?? "normal") as "low" | "normal" | "high" | "urgent",
-    taskType: String(formData.get("taskType") ?? "growth") as "growth" | "maintenance" | "admin" | "urgent",
-    sprintId: String(formData.get("sprintId") ?? "") || undefined,
-    storyPoints: storyPointsRaw && String(storyPointsRaw) !== "" ? Number(storyPointsRaw) : undefined,
-  });
+  try {
+    await createTask({
+      title: String(formData.get("title") ?? ""),
+      assigneeId: String(formData.get("assigneeId") ?? ""),
+      departmentId: String(formData.get("departmentId") ?? ""),
+      linkedKpiId: String(formData.get("linkedKpiId") ?? ""),
+      linkedActionPlanId: String(formData.get("linkedActionPlanId") ?? ""),
+      actionMetricId: String(formData.get("actionMetricId") ?? ""),
+      actionTargetValue: actionTargetRaw && String(actionTargetRaw) !== "" ? Number(actionTargetRaw) : undefined,
+      actionActualValue: actionActualRaw && String(actionActualRaw) !== "" ? Number(actionActualRaw) : undefined,
+      taskWeight: taskWeightRaw && String(taskWeightRaw) !== "" ? Number(taskWeightRaw) : undefined,
+      progressUnit: String(formData.get("progressUnit") ?? ""),
+      dueDate: String(formData.get("dueDate") ?? ""),
+      priority: String(formData.get("priority") ?? "normal") as "low" | "normal" | "high" | "urgent",
+      taskType: String(formData.get("taskType") ?? "growth") as "growth" | "maintenance" | "admin" | "urgent",
+      sprintId: String(formData.get("sprintId") ?? "") || undefined,
+      storyPoints: storyPointsRaw && String(storyPointsRaw) !== "" ? Number(storyPointsRaw) : undefined,
+    });
+  } catch (err) {
+    if (err instanceof RepositoryError) return actionErr(err.message);
+    throw err;
+  }
   revalidatePath("/operations");
+  return actionOk();
 }
 
 export async function recordTaskOutputAction(formData: FormData) {
@@ -151,9 +164,9 @@ export async function updateTaskStatusAction(formData: FormData) {
   revalidatePath("/operations");
 }
 
-export async function updateTaskAction(formData: FormData) {
+export async function updateTaskAction(formData: FormData): Promise<ActionResult> {
   const taskId = String(formData.get("taskId") ?? "");
-  if (!taskId) return;
+  if (!taskId) return actionErr("Thiếu task ID.");
 
   const input: Record<string, unknown> = { taskId };
   const title = formData.get("title");
@@ -201,8 +214,14 @@ export async function updateTaskAction(formData: FormData) {
   const blockedReason = formData.get("blockedReason");
   if (blockedReason !== null) input.blockedReason = String(blockedReason) || null;
 
-  await updateTask(input as Parameters<typeof updateTask>[0]);
+  try {
+    await updateTask(input as Parameters<typeof updateTask>[0]);
+  } catch (err) {
+    if (err instanceof RepositoryError) return actionErr(err.message);
+    throw err;
+  }
   revalidatePath("/operations");
+  return actionOk();
 }
 
 export async function bulkUpdateTasksAction(formData: FormData) {
@@ -421,6 +440,8 @@ export async function upsertKpiAction(raw: KpiUpsertInput): Promise<ActionResult
       });
       revalidatePath("/kpi");
       revalidatePath(`/kpi/${parsed.id}`);
+      revalidatePath("/operations");
+      revalidatePath("/dashboard");
       return actionOk({ id: parsed.id }, "Đã cập nhật KPI.");
     }
     const id = await createKpi({
@@ -436,6 +457,8 @@ export async function upsertKpiAction(raw: KpiUpsertInput): Promise<ActionResult
       period: parsed.period,
     });
     revalidatePath("/kpi");
+    revalidatePath("/operations");
+    revalidatePath("/dashboard");
     return actionOk({ id }, "Đã tạo KPI mới.");
   } catch (err) {
     return actionErr(errorMessage(err, "Không thể lưu KPI."));
@@ -447,6 +470,7 @@ export async function deleteKpiAction(id: string): Promise<ActionResult> {
   try {
     await softDeleteKpi(id);
     revalidatePath("/kpi");
+    revalidatePath("/operations");
     return actionOk(undefined, "Đã chuyển KPI sang inactive.");
   } catch (err) {
     return actionErr(errorMessage(err, "Không thể xoá KPI."));

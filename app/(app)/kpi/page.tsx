@@ -52,6 +52,7 @@ export default async function KpiPage() {
     tasks,
     employees,
     departments,
+    targets,
   });
 
   const companyRows = rows.filter((row) => row.level === "company").slice(0, 4);

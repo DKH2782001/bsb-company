@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import type { Task, Sprint, Employee } from "@/types/domain";
+import { useRouter } from "next/navigation";
+import type { Task, Sprint, Employee, Kpi, KpiTarget } from "@/types/domain";
 import { getSprintHealth, calculateSprintMetrics, getBacklogTasks, formatDaysLeft, FIBONACCI_POINTS, isTaskOverdue } from "./sprint-utils";
 import { assignTaskToSprintAction, createSprintAction, startSprintAction, completeSprintAction, updateTaskAction } from "@/app/(app)/workspace/actions";
 import { SprintKanban } from "./SprintKanban";
@@ -60,10 +61,13 @@ type SprintViewProps = {
   tasks: Task[];
   sprints: Sprint[];
   employees: Employee[];
+  kpis?: Kpi[];
+  kpiTargets?: KpiTarget[];
   onOpenDetail?: (id: string) => void;
 };
 
-export default function SprintView({ tasks, sprints, employees, onOpenDetail }: SprintViewProps) {
+export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTargets = [], onOpenDetail }: SprintViewProps) {
+  const router = useRouter();
   const activeSprint = sprints.find((s) => s.status === "active") || null;
   const planningSprint = sprints.find((s) => s.status === "planning") || null;
   const currentSprint = activeSprint || planningSprint;
@@ -128,6 +132,7 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
       fd.set("taskId", taskId);
       fd.set("sprintId", currentSprint.id);
       await assignTaskToSprintAction(fd);
+      router.refresh();
     });
   }
 
@@ -136,6 +141,7 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
       const fd = new FormData();
       fd.set("taskId", taskId);
       await assignTaskToSprintAction(fd);
+      router.refresh();
     });
   }
 
@@ -146,6 +152,7 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
       fd.set("storyPoints", String(points));
       await updateTaskAction(fd);
       setStoryPointsTaskId(null);
+      router.refresh();
     });
   }
 
@@ -242,7 +249,7 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
               📚 Lịch sử
             </button>
             {currentSprint.status === "planning" && (
-              <button onClick={() => { startTransition(async () => { const fd = new FormData(); fd.set("sprintId", currentSprint.id); await startSprintAction(fd); }); }} disabled={sprintTasks.length === 0 || isPending} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50 transition-all shadow-md">
+              <button onClick={() => { startTransition(async () => { const fd = new FormData(); fd.set("sprintId", currentSprint.id); await startSprintAction(fd); router.refresh(); }); }} disabled={sprintTasks.length === 0 || isPending} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50 transition-all shadow-md">
                 🚀 Bắt đầu Sprint
               </button>
             )}
@@ -412,6 +419,10 @@ export default function SprintView({ tasks, sprints, employees, onOpenDetail }: 
           sprintId={currentSprint.id}
           sprintName={currentSprint.name}
           employees={employees}
+          kpis={kpis}
+          sprints={sprints}
+          tasks={tasks}
+          kpiTargets={kpiTargets}
           onClose={() => setQuickCreateMode(null)}
           defaults={
             quickCreateMode === "urgent"

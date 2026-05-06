@@ -10,6 +10,7 @@ import type {
   Sprint,
   Employee,
   Kpi,
+  KpiTarget,
   Department,
   TaskResult,
   DepartmentResultKpi,
@@ -22,6 +23,7 @@ type Props = {
   sprints: Sprint[];
   employees: Employee[];
   kpis: Kpi[];
+  kpiTargets?: KpiTarget[];
   resultKpis: DepartmentResultKpi[];
   actionPlans: ActionPlan[];
   actionMetrics: ActionMetric[];
@@ -35,6 +37,7 @@ export function OperationsBoard({
   sprints,
   employees,
   kpis,
+  kpiTargets = [],
   resultKpis,
   actionPlans,
   actionMetrics,
@@ -113,6 +116,8 @@ export function OperationsBoard({
           tasks={tasks}
           sprints={sprints}
           employees={employees}
+          kpis={kpis}
+          kpiTargets={kpiTargets}
           onOpenDetail={(id) => setDetailTaskId(id)}
         />
       )}
@@ -123,6 +128,9 @@ export function OperationsBoard({
           task={detailTask}
           employees={employees}
           kpis={kpis}
+          kpiTargets={kpiTargets}
+          sprints={sprints}
+          tasks={tasks}
           resultKpis={resultKpis}
           actionPlans={actionPlans}
           actionMetrics={actionMetrics}

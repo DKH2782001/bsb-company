@@ -6,9 +6,23 @@ import {
   executionDemoTasks,
 } from "@/lib/queries/kpiExecutionDemo";
 import { writeAuditLog } from "@/lib/repositories/audit";
-import { getAuthenticatedUser, getDbClientOrThrow, getUserContext, withDemoFallback } from "@/lib/repositories/shared";
+import {
+  RepositoryError,
+  getAuthenticatedUser,
+  getDbClientOrThrow,
+  getUserContext,
+  withDemoFallback,
+} from "@/lib/repositories/shared";
 import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
-import type { Task, Sprint, TaskResult } from "@/types/domain";
+import { listKpis, listKpiTargets } from "@/lib/repositories/kpi";
+import {
+  buildKpiAllocation,
+  getSprintMonth,
+  shouldApplySprintAllocationRule,
+  validateTaskAllocation,
+  type KpiMonthlyAllocation,
+} from "@/lib/kpi/sprintAllocation";
+import type { Kpi, Task, Sprint, TaskResult } from "@/types/domain";
 
 function shouldUseDemoStore() {
   return isDemoMode() || !hasSupabaseEnv();
@@ -41,6 +55,76 @@ function isLinkedToExecution(input: {
       (input.linkedActionPlanId && executionDemoActionPlans.some((row) => row.id === input.linkedActionPlanId)) ||
       (input.actionMetricId && executionDemoActionMetrics.some((row) => row.id === input.actionMetricId)),
   );
+}
+
+function resolveLinkedKpiId(input: {
+  linkedKpiId?: string | null;
+  linkedActionPlanId?: string | null;
+  actionMetricId?: string | null;
+}) {
+  if (input.linkedKpiId) return input.linkedKpiId;
+  const metric = input.actionMetricId
+    ? executionDemoActionMetrics.find((row) => row.id === input.actionMetricId) ??
+      demo.demoActionMetrics.find((row) => row.id === input.actionMetricId)
+    : null;
+  const planId = input.linkedActionPlanId || metric?.action_plan_id || null;
+  if (!planId) return null;
+  const plan =
+    executionDemoActionPlans.find((row) => row.id === planId) ??
+    demo.demoActionPlans.find((row) => row.id === planId);
+  return plan?.linked_kpi_id ?? null;
+}
+
+export async function getKpiMonthlyAllocation(args: {
+  kpiId: string;
+  sprintId: string;
+  excludeTaskId?: string;
+}): Promise<KpiMonthlyAllocation | null> {
+  const [kpis, sprints] = await Promise.all([listKpis(), listSprints()]);
+  const kpi = (kpis as Kpi[]).find((row) => row.id === args.kpiId);
+  if (!kpi || !shouldApplySprintAllocationRule(kpi)) return null;
+
+  const targetSprint = (sprints as Sprint[]).find((row) => row.id === args.sprintId);
+  if (!targetSprint) return null;
+
+  const month = getSprintMonth(targetSprint);
+  const monthSprints = (sprints as Sprint[]).filter((row) => getSprintMonth(row) === month);
+  const targets = await listKpiTargets(month);
+  const target = targets.find((row) => row.kpi_id === args.kpiId);
+  if (!target) return null;
+
+  const tasks = await listTasks();
+  return buildKpiAllocation({
+    kpi,
+    monthlyTarget: target.target_value,
+    monthSprints,
+    tasksInScope: tasks,
+    excludeTaskId: args.excludeTaskId,
+  });
+}
+
+async function enforceSprintAllocationRule(args: {
+  linkedKpiId: string | null;
+  sprintId: string | null;
+  actionTargetValue: number | null | undefined;
+  excludeTaskId?: string;
+}) {
+  if (!args.linkedKpiId || !args.sprintId) return;
+  if (args.actionTargetValue == null || args.actionTargetValue <= 0) return;
+
+  const allocation = await getKpiMonthlyAllocation({
+    kpiId: args.linkedKpiId,
+    sprintId: args.sprintId,
+    excludeTaskId: args.excludeTaskId,
+  });
+  if (!allocation) return;
+
+  const result = validateTaskAllocation({
+    allocation,
+    targetSprintId: args.sprintId,
+    proposedValue: args.actionTargetValue,
+  });
+  if (!result.ok) throw new RepositoryError(result.reason);
 }
 
 export async function listTasks() {
@@ -99,6 +183,12 @@ export async function createTask(input: {
     : null;
   const linkedKpiId = input.linkedKpiId || selectedPlan?.linked_kpi_id || null;
   const linkedActionPlanId = input.linkedActionPlanId || selectedMetric?.action_plan_id || null;
+
+  await enforceSprintAllocationRule({
+    linkedKpiId,
+    sprintId: input.sprintId ?? null,
+    actionTargetValue: input.actionTargetValue ?? null,
+  });
 
   const payload = {
     company_id: context.companyId,
@@ -306,6 +396,33 @@ export async function updateTask(input: {
   if (input.blockedReason !== undefined) payload.blocked_reason = input.blockedReason || null;
 
   if (Object.keys(payload).length === 0) return;
+
+  const existing = await getTask(input.taskId);
+  const finalLinkedKpiId =
+    input.linkedKpiId !== undefined
+      ? input.linkedKpiId
+      : resolveLinkedKpiId({
+          linkedKpiId: existing?.linked_kpi_id ?? null,
+          linkedActionPlanId:
+            input.linkedActionPlanId !== undefined
+              ? input.linkedActionPlanId
+              : existing?.linked_action_plan_id ?? null,
+          actionMetricId:
+            input.actionMetricId !== undefined ? input.actionMetricId : existing?.action_metric_id ?? null,
+        });
+  const finalSprintId =
+    input.sprintId !== undefined ? input.sprintId : existing?.sprint_id ?? null;
+  const finalActionTargetValue =
+    input.actionTargetValue !== undefined
+      ? input.actionTargetValue
+      : existing?.action_target_value ?? null;
+
+  await enforceSprintAllocationRule({
+    linkedKpiId: finalLinkedKpiId,
+    sprintId: finalSprintId,
+    actionTargetValue: finalActionTargetValue,
+    excludeTaskId: input.taskId,
+  });
 
   const exIdx = executionTaskIndex(input.taskId);
   if (exIdx >= 0) {

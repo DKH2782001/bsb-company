@@ -73,16 +73,20 @@ export async function getUserContext(user?: User | null): Promise<UserContext> {
 }
 
 export async function withDemoFallback<T>(fallback: T, query: (db: DbClient) => Promise<T>) {
+  // DEMO_MODE=true → luôn dùng demo data (read + write nhất quán với store in-memory).
+  // Tránh tình huống đọc từ Supabase nhưng ghi vào demo store gây UI không update.
+  if (isDemoMode()) return fallback;
+
   const db = await createClientOrNull();
   if (!db) {
-    if (isDemoMode() || isBuildTime()) return fallback;
+    if (isBuildTime()) return fallback;
     throw new RepositoryError("Thiếu cấu hình Supabase và DEMO_MODE đang tắt.");
   }
 
   try {
     return await query(db as DbClient);
   } catch (error) {
-    if (isDemoMode() || isBuildTime()) return fallback;
+    if (isBuildTime()) return fallback;
     throw error;
   }
 }

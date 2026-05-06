@@ -9,6 +9,8 @@ import type {
   Task,
   Employee,
   Kpi,
+  KpiTarget,
+  Sprint,
   Department,
   TaskResult,
   DepartmentResultKpi,
@@ -16,6 +18,7 @@ import type {
   ActionMetric,
 } from "@/types/domain";
 import { updateTaskAction, updateTaskStatusAction, addTaskResultAction, deleteTaskResultAction } from "@/app/(app)/workspace/actions";
+import { KpiAllocationHint } from "./_components/KpiAllocationHint";
 import {
   X,
   Save,
@@ -35,6 +38,9 @@ type Props = {
   task: Task;
   employees: Employee[];
   kpis: Kpi[];
+  kpiTargets?: KpiTarget[];
+  sprints?: Sprint[];
+  tasks?: Task[];
   resultKpis: DepartmentResultKpi[];
   actionPlans: ActionPlan[];
   actionMetrics: ActionMetric[];
@@ -70,6 +76,9 @@ export function TaskDetailModal({
   task,
   employees,
   kpis,
+  kpiTargets = [],
+  sprints = [],
+  tasks = [],
   resultKpis,
   actionPlans,
   actionMetrics,
@@ -79,6 +88,7 @@ export function TaskDetailModal({
 }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [now] = useState(() => Date.now());
   const [dirty, setDirty] = useState(false);
   const formRef = useRef<HTMLFormElement>(null);
@@ -140,6 +150,7 @@ export function TaskDetailModal({
   }
 
   function handleSave() {
+    setSubmitError(null);
     startTransition(async () => {
       const fd = new FormData();
       fd.set("taskId", task.id);
@@ -163,7 +174,11 @@ export function TaskDetailModal({
       fd.set("qualityScore", qualityScore);
       fd.set("slaScore", slaScore);
       fd.set("blockedReason", blockedReason);
-      await updateTaskAction(fd);
+      const result = await updateTaskAction(fd);
+      if (result && !result.ok) {
+        setSubmitError(result.error);
+        return;
+      }
       router.refresh();
       onClose();
     });
@@ -581,6 +596,17 @@ export function TaskDetailModal({
             </div>
           )}
 
+          <KpiAllocationHint
+            kpis={kpis}
+            sprints={sprints}
+            tasks={tasks}
+            kpiTargets={kpiTargets}
+            linkedKpiId={linkedKpiId || null}
+            sprintId={task.sprint_id}
+            proposedValue={actionTargetValue ? Number(actionTargetValue) : null}
+            excludeTaskId={task.id}
+          />
+
           {(resultKpi || linkedKpi || linkedActionPlan || linkedActionMetric || Number(actionTargetValue || 0) > 0 || Number(taskWeight || 0) > 0) && (
             <div className="rounded-2xl border border-indigo-200 bg-indigo-50/60 p-4">
               <div className="mb-3 text-xs font-semibold uppercase tracking-wide text-indigo-700">
@@ -681,6 +707,18 @@ export function TaskDetailModal({
             {assignee && <span>Assignee: {assignee.full_name}</span>}
           </div>
         </div>
+
+        {submitError && (
+          <div className="px-6 pb-2">
+            <div className="rounded-lg border border-red-300 bg-red-50 px-3 py-2 text-xs text-red-700 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 mt-0.5 shrink-0" />
+              <div>
+                <div className="font-semibold">Không thể lưu</div>
+                <div>{submitError}</div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── Footer ──────────────────────────────────────────────────────── */}
         <div className="sticky bottom-0 bg-white/95 backdrop-blur-sm border-t border-zinc-100 px-6 py-3 flex items-center justify-between">
