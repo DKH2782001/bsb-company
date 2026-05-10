@@ -68,10 +68,16 @@ type SprintViewProps = {
 
 export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTargets = [], onOpenDetail }: SprintViewProps) {
   const router = useRouter();
-  const activeSprint = sprints.find((s) => s.status === "active") || null;
-  const planningSprint = sprints.find((s) => s.status === "planning") || null;
+  const [createdSprints, setCreatedSprints] = useState<Sprint[]>([]);
+  const createdSprintById = new Map(createdSprints.map((sprint) => [sprint.id, sprint]));
+  const visibleSprints = [
+    ...sprints.map((sprint) => createdSprintById.get(sprint.id) ?? sprint),
+    ...createdSprints.filter((created) => !sprints.some((sprint) => sprint.id === created.id)),
+  ];
+  const activeSprint = visibleSprints.find((s) => s.status === "active") || null;
+  const planningSprint = visibleSprints.find((s) => s.status === "planning") || null;
   const currentSprint = activeSprint || planningSprint;
-  const completedSprints = [...sprints]
+  const completedSprints = [...visibleSprints]
     .filter((s) => s.status === "completed")
     .sort((a, b) =>
       (b.completed_at ?? b.end_date ?? b.created_at).localeCompare(
@@ -156,6 +162,15 @@ export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTa
     });
   }
 
+  function upsertLocalSprint(next: Sprint) {
+    setCreatedSprints((prev) => {
+      if (prev.some((sprint) => sprint.id === next.id)) {
+        return prev.map((sprint) => (sprint.id === next.id ? next : sprint));
+      }
+      return [...prev, next];
+    });
+  }
+
   // No sprint → Empty state
   if (!currentSprint) {
     return (
@@ -195,9 +210,15 @@ export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTa
             onOpen={() => setShowAnalyticsModal(true)}
           />
         </div>
-        {showCreateModal && <CreateSprintModal onClose={() => setShowCreateModal(false)} sprints={sprints} />}
-        {showHistoryModal && <SprintHistoryModal sprints={sprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
-        {showAnalyticsModal && <SprintAnalyticsModal sprints={sprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
+        {showCreateModal && (
+          <CreateSprintModal
+            onClose={() => setShowCreateModal(false)}
+            onCreated={(sprint) => setCreatedSprints((prev) => [...prev, sprint])}
+            sprints={visibleSprints}
+          />
+        )}
+        {showHistoryModal && <SprintHistoryModal sprints={visibleSprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
+        {showAnalyticsModal && <SprintAnalyticsModal sprints={visibleSprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
       </div>
     );
   }
@@ -249,7 +270,7 @@ export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTa
               📚 Lịch sử
             </button>
             {currentSprint.status === "planning" && (
-              <button onClick={() => { startTransition(async () => { const fd = new FormData(); fd.set("sprintId", currentSprint.id); await startSprintAction(fd); router.refresh(); }); }} disabled={sprintTasks.length === 0 || isPending} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50 transition-all shadow-md">
+              <button onClick={() => { startTransition(async () => { const fd = new FormData(); fd.set("sprintId", currentSprint.id); await startSprintAction(fd); upsertLocalSprint({ ...currentSprint, status: "active" }); router.refresh(); }); }} disabled={isPending} className="px-4 py-2 rounded-lg text-white text-sm font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50 transition-all shadow-md">
                 🚀 Bắt đầu Sprint
               </button>
             )}
@@ -409,10 +430,16 @@ export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTa
       </div>
 
       {/* Modals */}
-      {showCreateModal && <CreateSprintModal onClose={() => setShowCreateModal(false)} sprints={sprints} />}
-      {showCompleteModal && activeSprint && <CompleteSprintModal sprint={activeSprint} tasks={tasks} sprints={sprints} onClose={() => setShowCompleteModal(false)} />}
-      {showHistoryModal && <SprintHistoryModal sprints={sprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
-      {showAnalyticsModal && <SprintAnalyticsModal sprints={sprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
+      {showCreateModal && (
+        <CreateSprintModal
+          onClose={() => setShowCreateModal(false)}
+          onCreated={(sprint) => setCreatedSprints((prev) => [...prev, sprint])}
+          sprints={visibleSprints}
+        />
+      )}
+      {showCompleteModal && activeSprint && <CompleteSprintModal sprint={activeSprint} tasks={tasks} sprints={visibleSprints} onCompleted={upsertLocalSprint} onClose={() => setShowCompleteModal(false)} />}
+      {showHistoryModal && <SprintHistoryModal sprints={visibleSprints} tasks={tasks} onClose={() => setShowHistoryModal(false)} />}
+      {showAnalyticsModal && <SprintAnalyticsModal sprints={visibleSprints} tasks={tasks} onClose={() => setShowAnalyticsModal(false)} />}
       {storyPointsTaskId && <StoryPointsModal taskId={storyPointsTaskId} task={tasks.find((t) => t.id === storyPointsTaskId)!} onSelect={handleSetStoryPoints} onClose={() => setStoryPointsTaskId(null)} />}
       {quickCreateMode && (
         <QuickCreateTaskDialog
@@ -420,7 +447,7 @@ export default function SprintView({ tasks, sprints, employees, kpis = [], kpiTa
           sprintName={currentSprint.name}
           employees={employees}
           kpis={kpis}
-          sprints={sprints}
+          sprints={visibleSprints}
           tasks={tasks}
           kpiTargets={kpiTargets}
           onClose={() => setQuickCreateMode(null)}
@@ -575,8 +602,18 @@ function SprintAnalyticsPreview({
 // MODALS
 // ============================================
 
-function CreateSprintModal({ onClose, sprints }: { onClose: () => void; sprints: Sprint[] }) {
+function CreateSprintModal({
+  onClose,
+  onCreated,
+  sprints,
+}: {
+  onClose: () => void;
+  onCreated?: (sprint: Sprint) => void;
+  sprints: Sprint[];
+}) {
+  const router = useRouter();
   const [isPending, startTransition] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   const count = sprints.length + 1;
   const now = new Date();
   const defaultEnd = new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000);
@@ -584,8 +621,15 @@ function CreateSprintModal({ onClose, sprints }: { onClose: () => void; sprints:
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
+    setError(null);
     startTransition(async () => {
-      await createSprintAction(fd);
+      const result = await createSprintAction(fd);
+      if (result && !result.ok) {
+        setError(result.error);
+        return;
+      }
+      if (result?.data) onCreated?.(result.data);
+      router.refresh();
       onClose();
     });
   }
@@ -616,6 +660,11 @@ function CreateSprintModal({ onClose, sprints }: { onClose: () => void; sprints:
           <label className="block text-sm font-medium text-slate-600 mb-1">Capacity (Story Points)</label>
           <input name="capacity" type="number" defaultValue={20} min={0} className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm" />
         </div>
+        {error && (
+          <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-700">
+            {error}
+          </div>
+        )}
         <div className="flex gap-3 justify-end pt-2">
           <button type="button" onClick={onClose} className="px-4 py-2 rounded-lg text-sm text-slate-600 hover:bg-slate-100">Hủy</button>
           <button type="submit" disabled={isPending} className="px-5 py-2 rounded-lg text-sm text-white font-semibold bg-gradient-to-r from-indigo-500 to-purple-600 disabled:opacity-50">
@@ -627,7 +676,19 @@ function CreateSprintModal({ onClose, sprints }: { onClose: () => void; sprints:
   );
 }
 
-function CompleteSprintModal({ sprint, tasks, sprints, onClose }: { sprint: Sprint; tasks: Task[]; sprints: Sprint[]; onClose: () => void }) {
+function CompleteSprintModal({
+  sprint,
+  tasks,
+  sprints,
+  onCompleted,
+  onClose,
+}: {
+  sprint: Sprint;
+  tasks: Task[];
+  sprints: Sprint[];
+  onCompleted?: (sprint: Sprint) => void;
+  onClose: () => void;
+}) {
   const [isPending, startTransition] = useTransition();
   const metrics = calculateSprintMetrics(sprint, tasks);
 
@@ -681,6 +742,20 @@ function CompleteSprintModal({ sprint, tasks, sprints, onClose }: { sprint: Spri
         })
       );
       await completeSprintAction(fd);
+      onCompleted?.({
+        ...sprint,
+        status: "completed",
+        completed_at: new Date().toISOString(),
+        velocity: metrics.velocity,
+        completed_points: metrics.completedPoints,
+        carry_over_points: metrics.carryOverPoints,
+        completion_rate: metrics.completionRate,
+        retrospective: {
+          went_well: wentWell.map((s) => s.trim()).filter(Boolean),
+          to_improve: toImprove.map((s) => s.trim()).filter(Boolean),
+          action_items: actionItems.map((s) => s.trim()).filter(Boolean),
+        },
+      });
       onClose();
     });
   }

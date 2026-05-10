@@ -53,6 +53,7 @@ import {
 } from "@/lib/validation/schemas";
 import { actionErr, actionOk, zodToFieldErrors, type ActionResult } from "@/lib/actions/result";
 import { upsertExecutionDemoActionPlan } from "@/lib/queries/kpiExecutionDemo";
+import type { Sprint } from "@/types/domain";
 
 export async function createDepartmentAction(formData: FormData) {
   await createDepartment({
@@ -724,15 +725,21 @@ export async function updateCompanySettingsAction(formData: FormData) {
 // SPRINT MANAGEMENT ACTIONS
 // ============================================
 
-export async function createSprintAction(formData: FormData) {
-  await createSprint({
-    name: String(formData.get("name") ?? ""),
-    goal: String(formData.get("goal") ?? ""),
-    startDate: String(formData.get("startDate") ?? ""),
-    endDate: String(formData.get("endDate") ?? ""),
-    capacity: Number(formData.get("capacity") ?? 0),
-  });
-  revalidatePath("/operations");
+export async function createSprintAction(formData: FormData): Promise<ActionResult<Sprint>> {
+  try {
+    const sprint = await createSprint({
+      name: String(formData.get("name") ?? ""),
+      goal: String(formData.get("goal") ?? ""),
+      startDate: String(formData.get("startDate") ?? ""),
+      endDate: String(formData.get("endDate") ?? ""),
+      capacity: Number(formData.get("capacity") ?? 0),
+    });
+    if (!sprint) return actionErr("Không tạo được sprint.");
+    revalidatePath("/operations");
+    return actionOk(sprint, "Đã tạo sprint.");
+  } catch (err) {
+    return actionErr(errorMessage(err, "Không thể tạo sprint."));
+  }
 }
 
 export async function startSprintAction(formData: FormData) {

@@ -94,7 +94,7 @@ export const NAV_GROUPS: NavGroup[] = [
     id: "governance",
     labelKey: "sidebar.group.governance",
     items: [
-      { href: "/approvals", labelKey: "nav.approvals", icon: CheckSquare, roles: ["ceo", "cfo", "hr_admin", "dept_head", "team_lead"] },
+      { href: "/approval/inbox", labelKey: "nav.approvals", icon: CheckSquare, roles: ["ceo", "cfo", "hr_admin", "dept_head", "team_lead"] },
       { href: "/audit", labelKey: "nav.audit", icon: History, roles: ["ceo", "auditor", "cfo"] },
       { href: "/settings", labelKey: "nav.settings", icon: Settings, roles: ["ceo", "cfo", "hr_admin"] },
     ],

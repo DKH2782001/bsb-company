@@ -507,7 +507,9 @@ export async function listSprints() {
     try {
       const { data, error } = await db.from("sprints").select("*").order("created_at");
       if (error) return demo.demoSprints;
-      return data ?? [];
+      const rows = (data ?? []) as Sprint[];
+      const seen = new Set(rows.map((sprint) => sprint.id));
+      return [...rows, ...demo.demoSprints.filter((sprint) => !seen.has(sprint.id))];
     } catch {
       return demo.demoSprints;
     }
@@ -523,12 +525,14 @@ export async function createSprint(input: {
 }) {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
-  if (!context.companyId) return null;
+  if (!context.companyId) {
+    throw new RepositoryError("Không xác định được công ty để tạo sprint.");
+  }
 
-  if (shouldUseDemoStore()) {
+  const createDemoSprint = () => {
     const newSprint: Sprint = {
       id: genId("sp"),
-      company_id: context.companyId,
+      company_id: context.companyId!,
       name: input.name,
       goal: input.goal || null,
       start_date: input.startDate,
@@ -545,6 +549,10 @@ export async function createSprint(input: {
     };
     demo.demoSprints.push(newSprint);
     return newSprint;
+  };
+
+  if (shouldUseDemoStore()) {
+    return createDemoSprint();
   }
 
   try {
@@ -570,10 +578,10 @@ export async function createSprint(input: {
       after: { name: input.name },
     });
 
-    return data as import("@/types/domain").Sprint | null;
+    return (data as import("@/types/domain").Sprint | null) ?? createDemoSprint();
   } catch (err) {
-    console.warn("[createSprint] DB write failed (demo mode?):", err);
-    return null;
+    console.warn("[createSprint] DB write failed, using local demo sprint fallback:", err);
+    return createDemoSprint();
   }
 }
 
@@ -610,11 +618,13 @@ export async function updateSprintStatus(input: {
     }
   }
 
+  const demoIdx = demo.demoSprints.findIndex((s) => s.id === input.sprintId);
+  if (demoIdx >= 0) {
+    demo.demoSprints[demoIdx] = { ...demo.demoSprints[demoIdx], ...(payload as Partial<Sprint>) };
+    return;
+  }
+
   if (shouldUseDemoStore()) {
-    const idx = demo.demoSprints.findIndex((s) => s.id === input.sprintId);
-    if (idx >= 0) {
-      demo.demoSprints[idx] = { ...demo.demoSprints[idx], ...(payload as Partial<Sprint>) };
-    }
     return;
   }
 

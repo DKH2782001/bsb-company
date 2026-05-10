@@ -47,13 +47,13 @@ export const HELP: Record<string, HelpEntry> = {
         "Chọn cột KPI công ty muốn hiển thị ở Settings → KPI formula (REV/GP/NP/Ret…).",
         "Cấu hình ngưỡng màu: xanh ≥100%, vàng 85-99%, đỏ <85% ở Settings → Rules.",
         "Kiểm tra 3 insight card AI — nếu sai narrative, cập nhật weight ở KPI Tree.",
-        "Check phòng ban đỏ/vàng → giao việc qua /approvals hoặc /operations.",
+        "Check phòng ban đỏ/vàng → giao việc qua /approval/inbox hoặc /operations.",
       ],
       en: [
         "Choose which company KPIs to show at Settings → KPI formula (REV/GP/NP/Ret…).",
         "Configure color thresholds: green ≥100%, amber 85–99%, red <85% at Settings → Rules.",
         "Review 3 AI insight cards — if the narrative is off, fix KPI weights in KPI Tree.",
-        "Check red/amber departments → assign work via /approvals or /operations.",
+        "Check red/amber departments → assign work via /approval/inbox or /operations.",
       ],
     },
     user: {
@@ -269,14 +269,14 @@ export const HELP: Record<string, HelpEntry> = {
         "Đầu tháng: chốt KPI kỳ trước ở /kpi.",
         "Hệ thống tính sẵn bonus theo rule: <80%=0x, ≥80%=0.5x, ≥90%=0.75x, ≥100%=1.0x, ≥120%=1.5x.",
         "Chỉnh bậc thưởng ở Settings → Bonus rules nếu cần.",
-        "Điều chỉnh cá nhân → tạo approval item ở /approvals.",
+        "Điều chỉnh cá nhân → tạo approval item ở /approval/inbox.",
         "Chạy payroll → status='closed' → /finance ghi nhận cost.",
       ],
       en: [
         "Early month: close prior-period KPIs at /kpi.",
         "System computes bonuses by rule: <80%=0x, ≥80%=0.5x, ≥90%=0.75x, ≥100%=1.0x, ≥120%=1.5x.",
         "Edit tiers at Settings → Bonus rules if needed.",
-        "Adjust per employee → creates approval at /approvals.",
+        "Adjust per employee → creates approval at /approval/inbox.",
         "Run payroll → status='closed' → /finance books the cost.",
       ],
     },
@@ -305,12 +305,12 @@ export const HELP: Record<string, HelpEntry> = {
       vi: [
         "Tạo project mới: owner, budget, timeline, business case.",
         "Gắn KPI công ty hoặc OKR → project hit target = KPI hit.",
-        "Duyệt thay đổi budget ở /approvals.",
+        "Duyệt thay đổi budget ở /approval/inbox.",
       ],
       en: [
         "Create a project: owner, budget, timeline, business case.",
         "Link a company KPI or OKR → project hit = KPI hit.",
-        "Approve budget changes at /approvals.",
+        "Approve budget changes at /approval/inbox.",
       ],
     },
     user: {
@@ -426,7 +426,7 @@ export const HELP: Record<string, HelpEntry> = {
     },
   },
 
-  "/approvals": {
+  "/approval/inbox": {
     icon: CheckSquare,
     label: { vi: "Phê duyệt", en: "Approvals" },
     summary: {
@@ -555,12 +555,12 @@ export const HELP: Record<string, HelpEntry> = {
     },
     admin: {
       vi: [
-        "Tạo job requisition → duyệt ở /approvals → mở đăng tuyển.",
+        "Tạo job requisition → duyệt ở /approval/inbox → mở đăng tuyển.",
         "Theo dõi pipeline: Mới → Screening → Interview → Offer.",
         "Skill gap: current vs target theo phòng — đề xuất training hoặc hiring.",
       ],
       en: [
-        "Create a job requisition → approve at /approvals → publish.",
+        "Create a job requisition → approve at /approval/inbox → publish.",
         "Track pipeline: New → Screening → Interview → Offer.",
         "Skill gap: current vs target per dept — suggest training or hiring.",
       ],

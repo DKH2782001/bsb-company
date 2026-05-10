@@ -247,8 +247,8 @@ export const DICT: Dict = {
   // Alerts/Approvals/Audit/Reports/OKR/Forecast/Recruiting/Knowledge/Settings
   "alerts.title": { vi: "Alerts Center", en: "Alerts Center" },
   "alerts.subtitle": { vi: "KPI · Task · Cash flow · Workload · Compliance", en: "KPI · Task · Cash flow · Workload · Compliance" },
-  "approvals.title": { vi: "Approval Center", en: "Approval Center" },
-  "approvals.subtitle": { vi: "KPI · Công thức · Thưởng · Ngân sách · Tuyển dụng", en: "KPI · Formula · Bonus · Budget · Recruiting" },
+  "approvals.title": { vi: "Trung tâm phê duyệt", en: "Approval Center" },
+  "approvals.subtitle": { vi: "Chờ duyệt · Đã duyệt · CC · Đơn tôi gửi", en: "Pending · Approved · CC · My requests" },
   "audit.title": { vi: "Audit Log", en: "Audit Log" },
   "audit.subtitle": { vi: "Lịch sử mọi thay đổi: ai · sửa gì · khi nào", en: "Every change: who · what · when" },
   "reports.title": { vi: "Report Center", en: "Report Center" },

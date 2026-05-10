@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { cookies } from "next/headers";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import { createClientOrNull, createServiceRoleClient } from "@/lib/supabase/server";
 import type { Database, TableRow } from "@/lib/supabase/database.types";
@@ -13,6 +14,14 @@ export class RepositoryError extends Error {
   constructor(message: string) {
     super(message);
     this.name = "RepositoryError";
+  }
+}
+
+async function hasDemoSessionCookie() {
+  try {
+    return (await cookies()).get("bizos_demo_session")?.value === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -36,13 +45,36 @@ export const getAuthenticatedUser = cache(async () => {
 });
 
 export async function getUserContext(user?: User | null): Promise<UserContext> {
+  const hasDemoSession = await hasDemoSessionCookie();
   const db = await createClientOrNull();
+  if (hasDemoSession && !user) {
+    return {
+      authUserId: demo.DEMO_AUTH_USER_ID,
+      companyId: demo.DEMO_COMPANY_ID,
+      employeeId: "e1",
+      roles: ["ceo"],
+      scopedDepartmentIds: [],
+      scopedTeamIds: [],
+    };
+  }
+
   if (!db || !user) {
+    if (isDemoMode()) {
+      return {
+        authUserId: demo.DEMO_AUTH_USER_ID,
+        companyId: demo.DEMO_COMPANY_ID,
+        employeeId: "e1",
+        roles: ["ceo"],
+        scopedDepartmentIds: [],
+        scopedTeamIds: [],
+      };
+    }
+
     return {
       authUserId: null,
-      companyId: isDemoMode() ? demo.DEMO_COMPANY_ID : null,
+      companyId: null,
       employeeId: null,
-      roles: isDemoMode() ? ["ceo"] : [],
+      roles: [],
       scopedDepartmentIds: [],
       scopedTeamIds: [],
     };
@@ -75,7 +107,7 @@ export async function getUserContext(user?: User | null): Promise<UserContext> {
 export async function withDemoFallback<T>(fallback: T, query: (db: DbClient) => Promise<T>) {
   // DEMO_MODE=true → luôn dùng demo data (read + write nhất quán với store in-memory).
   // Tránh tình huống đọc từ Supabase nhưng ghi vào demo store gây UI không update.
-  if (isDemoMode()) return fallback;
+  if (isDemoMode() || (await hasDemoSessionCookie())) return fallback;
 
   const db = await createClientOrNull();
   if (!db) {

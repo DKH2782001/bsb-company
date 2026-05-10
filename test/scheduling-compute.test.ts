@@ -70,6 +70,8 @@ const TEMPLATES = [MORNING, AFTERNOON, NIGHT];
 
 const EMP_A: SchedulingEmployee = {
   id: "e1",
+  departmentId: "dept-ops",
+  departmentName: "Operations",
   name: "Nguyễn Văn A",
   initials: "NA",
   role: "Pha chế",
@@ -81,6 +83,8 @@ const EMP_A: SchedulingEmployee = {
 
 const EMP_B: SchedulingEmployee = {
   id: "e2",
+  departmentId: "dept-ops",
+  departmentName: "Operations",
   name: "Trần Thị B",
   initials: "TB",
   role: "Phục vụ",

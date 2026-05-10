@@ -1,0 +1,558 @@
+[
+  {
+    "id": "template_1778226138569",
+    "status": "published",
+    "basicInfo": {
+      "icon": "cart",
+      "name": "PHIEU DE XUAT THANH TOAN HANH CHINH",
+      "description": "",
+      "group": "PHIEU KE TOAN",
+      "submitScope": {
+        "type": "ALL",
+        "ids": []
+      },
+      "showOnWorkplace": true,
+      "prohibitAdmin": false,
+      "administratorIds": [
+        "e1"
+      ]
+    },
+    "formSchema": {
+      "version": 1,
+      "fields": [
+        {
+          "id": "field_full_name",
+          "type": "short_answer",
+          "label": "Ho Va Ten",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_department",
+          "type": "department",
+          "label": "Phong Ban",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_manager",
+          "type": "contacts",
+          "label": "Quan ly",
+          "placeholder": "Chon nguoi quan ly",
+          "required": true
+        },
+        {
+          "id": "field_reason",
+          "type": "paragraph",
+          "label": "Ly do thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_item",
+          "type": "short_answer",
+          "label": "Muc thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_unit_price",
+          "type": "amount",
+          "label": "Don gia",
+          "placeholder": "Enter amount",
+          "required": true,
+          "currency": "VND"
+        },
+        {
+          "id": "field_quantity",
+          "type": "number",
+          "label": "So luong",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_total",
+          "type": "formula",
+          "label": "Thanh tien",
+          "required": true,
+          "formula": "{{field_unit_price}} * {{field_quantity}}",
+          "currency": "VND"
+        },
+        {
+          "id": "field_invoice",
+          "type": "image",
+          "label": "Hoa don minh chung",
+          "placeholder": "Upload anh hoa don",
+          "required": true
+        },
+        {
+          "id": "field_account",
+          "type": "short_answer",
+          "label": "Chu tai khoan",
+          "placeholder": "Enter",
+          "required": true
+        }
+      ]
+    },
+    "processSchema": {
+      "version": 1,
+      "nodes": [
+        {
+          "id": "submit",
+          "type": "SUBMIT",
+          "name": "Submit"
+        },
+        {
+          "id": "approval_manager",
+          "type": "APPROVAL",
+          "name": "Quan ly duyet",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "CONTACTS_IN_FORM",
+            "fieldId": "field_manager"
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "FORWARD_MANAGER",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_accounting",
+          "type": "APPROVAL",
+          "name": "Ke toan kiem tra",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "AUTO_SKIP",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": false,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_bod",
+          "type": "APPROVAL",
+          "name": "BOD",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e1"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "SELF_REVIEW",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": false,
+            "canComment": true
+          }
+        },
+        {
+          "id": "handler_payment",
+          "type": "HANDLER",
+          "name": "Ke toan thanh toan",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          }
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "name": "End"
+        }
+      ]
+    },
+    "more": {
+      "notifyOnSubmit": true,
+      "notifyOnApprove": true,
+      "dataPermission": "submitter_and_approvers",
+      "printTemplateEnabled": false
+    }
+  },
+  {
+    "id": "template_1778224126667",
+    "status": "published",
+    "basicInfo": {
+      "icon": "cart",
+      "name": "PHIEU DE XUAT THANH TOAN HANH CHINH5",
+      "description": "",
+      "group": "PHIEU KE TOAN",
+      "submitScope": {
+        "type": "ALL",
+        "ids": []
+      },
+      "showOnWorkplace": true,
+      "prohibitAdmin": false,
+      "administratorIds": [
+        "e1"
+      ]
+    },
+    "formSchema": {
+      "version": 1,
+      "fields": [
+        {
+          "id": "field_full_name",
+          "type": "short_answer",
+          "label": "Ho Va Ten 234",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_department",
+          "type": "department",
+          "label": "Phong Ban 234234",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_manager",
+          "type": "contacts",
+          "label": "Quan ly",
+          "placeholder": "Chon nguoi quan ly",
+          "required": true
+        },
+        {
+          "id": "field_reason",
+          "type": "paragraph",
+          "label": "Ly do thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_item",
+          "type": "short_answer",
+          "label": "Muc thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_unit_price",
+          "type": "amount",
+          "label": "Don gia",
+          "placeholder": "Enter amount",
+          "required": true,
+          "currency": "VND"
+        },
+        {
+          "id": "field_quantity",
+          "type": "number",
+          "label": "So luong",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_total",
+          "type": "formula",
+          "label": "Thanh tien",
+          "required": true,
+          "formula": "{{field_unit_price}} * {{field_quantity}}",
+          "currency": "VND"
+        },
+        {
+          "id": "field_invoice",
+          "type": "attachment",
+          "label": "Hoa don minh chung",
+          "required": true
+        },
+        {
+          "id": "field_account",
+          "type": "short_answer",
+          "label": "Chu tai khoan",
+          "placeholder": "Enter",
+          "required": true
+        }
+      ]
+    },
+    "processSchema": {
+      "version": 1,
+      "nodes": [
+        {
+          "id": "submit",
+          "type": "SUBMIT",
+          "name": "Submit"
+        },
+        {
+          "id": "approval_manager",
+          "type": "APPROVAL",
+          "name": "Quan ly duyet",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "CONTACTS_IN_FORM",
+            "fieldId": "field_manager"
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "FORWARD_MANAGER",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_accounting",
+          "type": "APPROVAL",
+          "name": "Ke toan kiem tra",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "AUTO_SKIP",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": false,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_bod",
+          "type": "APPROVAL",
+          "name": "BOD",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e1"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "SELF_REVIEW",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": false,
+            "canComment": true
+          }
+        },
+        {
+          "id": "handler_payment",
+          "type": "HANDLER",
+          "name": "Ke toan thanh toan",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          }
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "name": "End"
+        }
+      ]
+    },
+    "more": {
+      "notifyOnSubmit": true,
+      "notifyOnApprove": true,
+      "dataPermission": "submitter_and_approvers",
+      "printTemplateEnabled": false
+    }
+  },
+  {
+    "id": "template_1778224106380",
+    "status": "published",
+    "basicInfo": {
+      "icon": "cart",
+      "name": "PHIEU DE XUAT THANH TOAN HANH CHINH 3",
+      "description": "",
+      "group": "PHIEU KE TOAN",
+      "submitScope": {
+        "type": "ALL",
+        "ids": []
+      },
+      "showOnWorkplace": true,
+      "prohibitAdmin": false,
+      "administratorIds": [
+        "e1"
+      ]
+    },
+    "formSchema": {
+      "version": 1,
+      "fields": [
+        {
+          "id": "field_full_name",
+          "type": "short_answer",
+          "label": "Ho Va Ten",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_department",
+          "type": "department",
+          "label": "Phong Ban",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_manager",
+          "type": "contacts",
+          "label": "Quan ly",
+          "placeholder": "Chon nguoi quan ly",
+          "required": true
+        },
+        {
+          "id": "field_reason",
+          "type": "paragraph",
+          "label": "Ly do thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_item",
+          "type": "short_answer",
+          "label": "Muc thanh toan",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_unit_price",
+          "type": "amount",
+          "label": "Don gia",
+          "placeholder": "Enter amount",
+          "required": true,
+          "currency": "VND"
+        },
+        {
+          "id": "field_quantity",
+          "type": "number",
+          "label": "So luong",
+          "placeholder": "Enter",
+          "required": true
+        },
+        {
+          "id": "field_total",
+          "type": "formula",
+          "label": "Thanh tien",
+          "required": true,
+          "formula": "{{field_unit_price}} * {{field_quantity}}",
+          "currency": "VND"
+        },
+        {
+          "id": "field_invoice",
+          "type": "attachment",
+          "label": "Hoa don minh chung",
+          "required": true
+        },
+        {
+          "id": "field_account",
+          "type": "short_answer",
+          "label": "Chu tai khoan",
+          "placeholder": "Enter",
+          "required": true
+        }
+      ]
+    },
+    "processSchema": {
+      "version": 1,
+      "nodes": [
+        {
+          "id": "submit",
+          "type": "SUBMIT",
+          "name": "Submit"
+        },
+        {
+          "id": "approval_manager",
+          "type": "APPROVAL",
+          "name": "Quan ly duyet",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "CONTACTS_IN_FORM",
+            "fieldId": "field_manager"
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "FORWARD_MANAGER",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_accounting",
+          "type": "APPROVAL",
+          "name": "Ke toan kiem tra",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "AUTO_SKIP",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": false,
+            "canReturn": true,
+            "canComment": true
+          }
+        },
+        {
+          "id": "approval_bod",
+          "type": "APPROVAL",
+          "name": "BOD",
+          "approvalType": "MANUAL",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e1"
+            ]
+          },
+          "multiApproverLogic": "ALL_AGREE",
+          "selfApprovalRule": "SELF_REVIEW",
+          "operationPermissions": {
+            "canTransfer": true,
+            "canAddApprover": true,
+            "canReturn": false,
+            "canComment": true
+          }
+        },
+        {
+          "id": "handler_payment",
+          "type": "HANDLER",
+          "name": "Ke toan thanh toan",
+          "approverRule": {
+            "kind": "SPECIFY",
+            "userIds": [
+              "e3"
+            ]
+          }
+        },
+        {
+          "id": "end",
+          "type": "END",
+          "name": "End"
+        }
+      ]
+    },
+    "more": {
+      "notifyOnSubmit": true,
+      "notifyOnApprove": true,
+      "dataPermission": "submitter_and_approvers",
+      "printTemplateEnabled": false
+    }
+  }
+]

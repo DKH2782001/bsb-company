@@ -1,7 +1,26 @@
 import * as demo from "@/lib/queries/demo";
+import {
+  appendApprovalComment,
+  applyApprovalDecision,
+  buildManualApprovalWorkflow,
+  getCurrentApprovalStep,
+  getApprovalWorkflow,
+  insertApprovalStep,
+  reassignCurrentApprovalStep,
+  returnCurrentApprovalStep,
+} from "@/lib/approvals/workflow";
 import { hasSupabaseEnv, isDemoMode } from "@/lib/env";
+import {
+  listDemoApprovals,
+  prependStoredDemoApproval,
+  readStoredDemoApprovals,
+  upsertStoredDemoApproval,
+} from "@/lib/repositories/approval-demo-store";
 import { writeAuditLog } from "@/lib/repositories/audit";
+import { listEmployees } from "@/lib/repositories/org";
+import { createNotification } from "@/lib/repositories/notifications";
 import { getAuthenticatedUser, getUserContext, withDemoFallback } from "@/lib/repositories/shared";
+import type { Approval } from "@/types/domain";
 
 export async function listAlerts() {
   return withDemoFallback(demo.demoAlerts, async (db) => {
@@ -16,6 +35,12 @@ export async function listAlerts() {
 }
 
 export async function listApprovals() {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  if (!context.companyId || context.companyId === demo.DEMO_COMPANY_ID || shouldUseDemoStore()) {
+    return listDemoApprovals(demo.demoApprovals);
+  }
+
   return withDemoFallback(demo.demoApprovals, async (db) => {
     const { data, error } = await db
       .from("approvals")
@@ -183,6 +208,173 @@ function shouldUseDemoStore() {
   return isDemoMode() || !hasSupabaseEnv();
 }
 
+function newId(prefix: string) {
+  return globalThis.crypto?.randomUUID?.() ?? `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export type CreateApprovalInput = {
+  kind: string;
+  title: string;
+  payload: Record<string, unknown>;
+  requestedBy?: string | null;
+  workflowSteps?: Array<{
+    label: string;
+    approverRole?: string | null;
+    approverEmployeeId: string | null;
+  }>;
+};
+
+function employeeAuthUserId(employeeId: string | null | undefined, employees: Awaited<ReturnType<typeof listEmployees>>) {
+  if (!employeeId) return null;
+  const employee = employees.find((item) => item.id === employeeId);
+  return employee?.auth_user_id ?? demo.DEMO_AUTH_USER_ID;
+}
+
+async function notifyApprovalAssignee(approval: Approval, reason: string) {
+  const current = getCurrentApprovalStep(approval);
+  if (!current?.approverEmployeeId) return;
+  const employees = await listEmployees();
+  const authUserId = employeeAuthUserId(current.approverEmployeeId, employees);
+  if (!authUserId) return;
+  await createNotification({
+    authUserId,
+    title: "Có request cần phê duyệt",
+    body: `${reason}: ${approval.title} · Bước: ${current.label}`,
+    link: `/approval/inbox?q=${encodeURIComponent(approval.title)}&status=pending&kind=all`,
+  });
+}
+
+export async function createApprovalRequest(input: CreateApprovalInput) {
+  const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
+  const companyId = context.companyId ?? demo.DEMO_COMPANY_ID;
+  const requesterEmployeeId = input.requestedBy || context.employeeId || "e1";
+
+  const now = new Date().toISOString();
+  const approval: Approval = {
+    id: newId("approval"),
+    company_id: companyId,
+    kind: input.kind,
+    title: input.title.trim() || "Request phê duyệt mới",
+    payload: input.payload,
+    status: "pending",
+    requested_by: requesterEmployeeId,
+    decided_by: null,
+    decided_at: null,
+    decision_note: null,
+    created_at: now,
+  };
+  const withWorkflow: Approval = {
+    ...approval,
+    payload: {
+      ...approval.payload,
+      approvalWorkflow: input.workflowSteps?.length
+        ? buildManualApprovalWorkflow({
+            approvalId: approval.id,
+            steps: input.workflowSteps,
+          })
+        : getApprovalWorkflow(approval),
+    },
+  };
+
+  if (shouldUseDemoStore() || !context.companyId || context.companyId === demo.DEMO_COMPANY_ID) {
+    demo.demoApprovals.unshift(withWorkflow);
+    await prependStoredDemoApproval(withWorkflow);
+    await writeAuditLog({
+      action: "approval.created",
+      entity: "approvals",
+      entityId: withWorkflow.id,
+      before: null,
+      after: withWorkflow,
+    });
+    await notifyApprovalAssignee(withWorkflow, "Request mới được tạo");
+    return withWorkflow;
+  }
+
+  const db = await import("@/lib/repositories/shared").then((mod) => mod.getDbClientOrThrow());
+  const approvalsTable = db.from("approvals") as unknown as {
+    insert: (values: {
+      id: string;
+      company_id: string;
+      kind: string;
+      title: string;
+      payload: Approval["payload"];
+      status: Approval["status"];
+      requested_by: string | null;
+      created_at: string;
+    }) => {
+      select: () => {
+        single: () => Promise<{ data: Approval | null; error: unknown }>;
+      };
+    };
+  };
+
+  const { data, error } = await approvalsTable
+    .insert({
+      id: withWorkflow.id,
+      company_id: withWorkflow.company_id,
+      kind: withWorkflow.kind,
+      title: withWorkflow.title,
+      payload: withWorkflow.payload,
+      status: withWorkflow.status,
+      requested_by: withWorkflow.requested_by,
+      created_at: withWorkflow.created_at,
+    })
+    .select()
+    .single();
+  if (error) throw error;
+
+  const created = data ?? withWorkflow;
+  await writeAuditLog({
+    action: "approval.created",
+    entity: "approvals",
+    entityId: created.id,
+    before: null,
+    after: created,
+  });
+  await notifyApprovalAssignee(created, "Request mới được tạo");
+  return created;
+}
+
+async function persistApprovalChange(before: Approval, after: Approval, action: string) {
+  const demoIdx = demo.demoApprovals.findIndex((item) => item.id === after.id);
+  const storedDemoIdx = (await readStoredDemoApprovals()).findIndex((item) => item.id === after.id);
+  if (shouldUseDemoStore() || demoIdx >= 0 || storedDemoIdx >= 0 || after.company_id === demo.DEMO_COMPANY_ID) {
+    if (demoIdx >= 0) demo.demoApprovals[demoIdx] = after;
+    await upsertStoredDemoApproval(after);
+    await writeAuditLog({
+      action,
+      entity: "approvals",
+      entityId: after.id,
+      before,
+      after,
+    });
+    return;
+  }
+
+  const db = await import("@/lib/repositories/shared").then((mod) => mod.getDbClientOrThrow());
+  const approvalsTable = db.from("approvals") as unknown as {
+    update: (values: { status: Approval["status"]; payload: Approval["payload"] }) => {
+      eq: (column: string, value: string) => {
+        eq: (column: string, value: string) => Promise<unknown>;
+      };
+    };
+  };
+
+  await approvalsTable
+    .update({ status: after.status, payload: after.payload })
+    .eq("id", after.id)
+    .eq("company_id", after.company_id);
+
+  await writeAuditLog({
+    action,
+    entity: "approvals",
+    entityId: after.id,
+    before,
+    after,
+  });
+}
+
 export async function setApprovalStatus(
   approvalId: string,
   status: "approved" | "rejected" | "cancelled",
@@ -193,48 +385,173 @@ export async function setApprovalStatus(
   const approval = approvals.find((item) => item.id === approvalId);
   if (!approval || !context.companyId) return;
 
-  const decidedAt = new Date().toISOString();
-  const decidedBy = context.employeeId ?? demo.DEMO_AUTH_USER_ID;
-  const after = {
-    ...approval,
-    status,
-    decided_by: decidedBy,
-    decided_at: decidedAt,
-    decision_note: note?.trim() || null,
-  };
-
-  if (shouldUseDemoStore()) {
-    const idx = demo.demoApprovals.findIndex((item) => item.id === approvalId);
-    if (idx >= 0) demo.demoApprovals[idx] = after;
+  const actorEmployeeId = context.employeeId ?? demo.DEMO_AUTH_USER_ID;
+  const currentStep = getCurrentApprovalStep(approval);
+  if (
+    approval.status === "pending" &&
+    status !== "cancelled" &&
+    currentStep?.approverEmployeeId &&
+    currentStep.approverEmployeeId !== actorEmployeeId
+  ) {
     await writeAuditLog({
-      action: `approval.${status}`,
+      action: "approval.decision_blocked_wrong_approver",
       entity: "approvals",
-      entityId: approvalId,
+      entityId: approval.id,
       before: approval,
-      after,
+      after: {
+        attemptedBy: actorEmployeeId,
+        requiredApprover: currentStep.approverEmployeeId,
+        status,
+      },
     });
     return;
   }
+  const after =
+    status === "cancelled"
+      ? {
+          ...approval,
+          status,
+          payload: {
+            ...approval.payload,
+            approvalWorkflow: {
+              ...getApprovalWorkflow(approval),
+              currentStepId: null,
+              steps: getApprovalWorkflow(approval).steps.map((step) =>
+                step.status === "pending" ? { ...step, status: "cancelled" as const } : step,
+              ),
+            },
+          },
+          decided_by: actorEmployeeId,
+          decided_at: new Date().toISOString(),
+          decision_note: note?.trim() || null,
+        }
+      : applyApprovalDecision({
+          approval,
+          decision: status,
+          actorEmployeeId,
+          note,
+        });
 
-  const db = await import("@/lib/repositories/shared").then((mod) => mod.getDbClientOrThrow());
-  const approvalsTable = db.from("approvals") as unknown as {
-    update: (values: { status: "approved" | "rejected" | "cancelled" }) => {
-      eq: (column: string, value: string) => {
-        eq: (column: string, value: string) => Promise<unknown>;
-      };
-    };
-  };
+  await persistApprovalChange(approval, after, `approval.${status}`);
+  if (after.status === "pending" && after.id !== approval.id) return;
+  if (after.status === "pending") await notifyApprovalAssignee(after, "Đến lượt bạn duyệt");
+}
 
-  await approvalsTable
-    .update({ status })
-    .eq("id", approvalId)
-    .eq("company_id", context.companyId);
+export async function bulkApproveRequests(approvalIds: string[], note?: string) {
+  const ids = Array.from(new Set(approvalIds.filter(Boolean)));
+  if (!ids.length) return;
+  const [user, approvals] = await Promise.all([getAuthenticatedUser(), listApprovals()]);
+  const context = await getUserContext(user);
+  if (!context.companyId) return;
+  const actorEmployeeId = context.employeeId ?? demo.DEMO_AUTH_USER_ID;
 
-  await writeAuditLog({
-    action: `approval.${status}`,
-    entity: "approvals",
-    entityId: approvalId,
-    before: approval,
-    after,
+  for (const approval of approvals) {
+    if (!ids.includes(approval.id) || approval.status !== "pending") continue;
+    const after = applyApprovalDecision({
+      approval,
+      decision: "approved",
+      actorEmployeeId,
+      note,
+    });
+    await persistApprovalChange(approval, after, "approval.bulk_approved");
+    if (after.status === "pending") await notifyApprovalAssignee(after, "Đến lượt bạn duyệt");
+  }
+}
+
+export async function reassignApproval(approvalId: string, toEmployeeId: string, note?: string) {
+  const [user, approvals, employees] = await Promise.all([
+    getAuthenticatedUser(),
+    listApprovals(),
+    listEmployees(),
+  ]);
+  const context = await getUserContext(user);
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval || !context.companyId) return;
+  const employee = employees.find((item) => item.id === toEmployeeId);
+  const after = reassignCurrentApprovalStep({
+    approval,
+    toEmployeeId,
+    toEmployeeName: employee?.full_name ?? null,
+    actorEmployeeId: context.employeeId ?? demo.DEMO_AUTH_USER_ID,
+    note,
+    kind: "reassign",
   });
+  await persistApprovalChange(approval, after, "approval.reassigned");
+  await notifyApprovalAssignee(after, "Request được chuyển người duyệt");
+}
+
+export async function delegateApproval(approvalId: string, toEmployeeId: string, note?: string) {
+  const [user, approvals, employees] = await Promise.all([
+    getAuthenticatedUser(),
+    listApprovals(),
+    listEmployees(),
+  ]);
+  const context = await getUserContext(user);
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval || !context.companyId) return;
+  const employee = employees.find((item) => item.id === toEmployeeId);
+  const after = reassignCurrentApprovalStep({
+    approval,
+    toEmployeeId,
+    toEmployeeName: employee?.full_name ?? null,
+    actorEmployeeId: context.employeeId ?? demo.DEMO_AUTH_USER_ID,
+    note,
+    kind: "delegate",
+  });
+  await persistApprovalChange(approval, after, "approval.delegated");
+  await notifyApprovalAssignee(after, "Request được uỷ quyền cho bạn");
+}
+
+export async function returnApproval(approvalId: string, note?: string) {
+  const [user, approvals] = await Promise.all([getAuthenticatedUser(), listApprovals()]);
+  const context = await getUserContext(user);
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval) return;
+  const after = returnCurrentApprovalStep({
+    approval,
+    actorEmployeeId: context.employeeId ?? demo.DEMO_AUTH_USER_ID,
+    note,
+  });
+  await persistApprovalChange(approval, after, "approval.returned");
+  await notifyApprovalAssignee(after, "Request duoc tra ve buoc truoc");
+}
+
+export async function addApprovalStep(
+  approvalId: string,
+  toEmployeeId: string,
+  position: "before_current" | "after_current",
+  note?: string,
+) {
+  const [user, approvals, employees] = await Promise.all([
+    getAuthenticatedUser(),
+    listApprovals(),
+    listEmployees(),
+  ]);
+  const context = await getUserContext(user);
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval || !toEmployeeId) return;
+  const employee = employees.find((item) => item.id === toEmployeeId);
+  const after = insertApprovalStep({
+    approval,
+    toEmployeeId,
+    toEmployeeName: employee?.full_name ?? null,
+    actorEmployeeId: context.employeeId ?? demo.DEMO_AUTH_USER_ID,
+    position,
+    note,
+  });
+  await persistApprovalChange(approval, after, "approval.step_added");
+  await notifyApprovalAssignee(after, "Request co them nguoi duyet");
+}
+
+export async function commentApproval(approvalId: string, note: string) {
+  const [user, approvals] = await Promise.all([getAuthenticatedUser(), listApprovals()]);
+  const context = await getUserContext(user);
+  const approval = approvals.find((item) => item.id === approvalId);
+  if (!approval || !note.trim()) return;
+  const after = appendApprovalComment({
+    approval,
+    actorEmployeeId: context.employeeId ?? demo.DEMO_AUTH_USER_ID,
+    note,
+  });
+  await persistApprovalChange(approval, after, "approval.commented");
 }

@@ -17,6 +17,17 @@ const DEMO_MSG =
 
 const DEMO_EMAIL = "ceo@bizos.demo";
 const DEMO_PASSWORD = "demo123456";
+const DEMO_LOGIN_ALIASES = [
+  { email: DEMO_EMAIL, password: DEMO_PASSWORD },
+  { email: "ceo@bizos.local", password: "123456" },
+];
+
+function isDemoLogin(email: string, password: string) {
+  const normalizedEmail = email.toLowerCase();
+  return DEMO_LOGIN_ALIASES.some(
+    (credential) => credential.email === normalizedEmail && credential.password === password,
+  );
+}
 
 async function setDemoSession() {
   const cookieStore = await cookies();
@@ -48,7 +59,7 @@ export async function login(formData: FormData): Promise<void> {
   const password = String(formData.get("password") ?? "");
   const next = String(formData.get("next") ?? "/dashboard");
 
-  if (email.toLowerCase() === DEMO_EMAIL && password === DEMO_PASSWORD) {
+  if (isDemoLogin(email, password)) {
     await setDemoSession();
     redirect(next || "/dashboard");
   }
@@ -59,7 +70,7 @@ export async function login(formData: FormData): Promise<void> {
     const result = await supabase.auth.signInWithPassword({ email, password });
     error = result.error;
   } catch (err) {
-    if (email.toLowerCase() === DEMO_EMAIL) {
+    if (DEMO_LOGIN_ALIASES.some((credential) => credential.email === email.toLowerCase())) {
       await setDemoSession();
       redirect(next || "/dashboard");
     }

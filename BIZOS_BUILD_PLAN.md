@@ -224,7 +224,50 @@ Phase 6: AI, Mobile & Polish       → Tháng 11-12    (8 tuần)
 >   - Trang [/approvals](app/(app)/approvals/page.tsx): filter theo trạng thái, loại request, từ khóa; danh sách pending/approved/rejected/cancelled
 >   - Approve/reject có `decision_note`, `decided_at`, `decided_by`; demo mode lưu trạng thái ngay trong mock store để test được sau khi bấm
 >   - Audit log: `approval.approved/rejected` ghi before/after gồm ghi chú quyết định
->   - Chưa làm trong phase này: routing nhiều cấp, reassign, delegation, bulk approve, rule theo amount/type/department
+> - [x] **Approval Center Phase 2** — Rule-based routing / demo-safe ✅
+>   - Route request theo `kind`, amount/headcount/target trong payload; hiển thị rule và current approver trên [/approvals](app/(app)/approvals/page.tsx)
+> - [x] **Approval Center Phase 3** — Multi-step approval ✅
+>   - Workflow nhiều bước lưu trong `payload.approvalWorkflow`; approve từng bước, chỉ chuyển `approved` khi hết step pending
+> - [x] **Approval Center Phase 4** — Reassign & delegation ✅
+>   - Form chuyển người duyệt và uỷ quyền ngay trên từng request; ghi history trong workflow payload + audit log
+> - [x] **Approval Center Phase 5** — Bulk approve MVP ✅
+>   - Bulk approve các request đang lọc; chỉ duyệt current step, không bypass các step sau
+> - [x] **Approval Builder Phase 2 MVP** — Lark-style 4-step template builder ✅
+>   - Trang [/approvals/builder](app/(app)/approvals/builder/page.tsx): Basic Info, Form Design, Process Design, More
+>   - Schema template/form/process tách riêng ở [lib/approvals/templateSchema.ts](lib/approvals/templateSchema.ts)
+>   - Form builder có widget palette + phone preview + field property panel; process builder có node dọc + panel cấu hình approver
+>   - Có nút submit test request bằng flow đang cấu hình để nối sang runtime approval hiện tại
+> - [x] **Approval Addendum Route Refactor** — tách 5 vùng chức năng theo addendum ✅
+>   - `/approval`: Submit Request, browse template và gửi form theo schema demo
+>   - `/approval/inbox`: Approval Center với tabs Pending / Approved / CC / My requests
+>   - `/approval/admin`: Admin Console quản lý template; `/approval/admin/createApproval`: builder 4 bước
+>   - `/approval/analytics`: Efficiency Diagnosis MVP; `/approval/data`: Data Management MVP
+>   - Step 4 More chỉ giữ cấu hình; Preview/submit test chuyển sang modal riêng; không còn label UI kiểu `Phase` / `Lark-style Builder`
+> - [x] **Approval Request Detail Page** — xem chi tiết phiếu đề xuất end-to-end ✅
+>   - Trang `/approval/requests/[id]`: request info, nội dung form, routing hiện tại, timeline workflow, approve/reject, chuyển người duyệt, uỷ quyền
+>   - Inbox có nút "Xem chi tiet phieu" để mở full request detail thay vì chỉ xem nhanh trong danh sách
+>   - Server actions revalidate thêm `/approval/requests/[id]` sau approve/reject/reassign/delegate
+> - [x] **Approval Advanced Actions MVP** — thao tác request giống approval thật hơn ✅
+>   - Thêm `returnCurrentApprovalStep`, `insertApprovalStep`, `appendApprovalComment` trong [lib/approvals/workflow.ts](lib/approvals/workflow.ts)
+>   - Repository/server actions hỗ trợ: trả về bước trước, thêm người duyệt trước/sau bước hiện tại, bình luận nội bộ
+>   - UI `/approval/requests/[id]` có form Return / Add approver / Comment và timeline hiển thị bình luận/thao tác bổ sung
+>   - Test mới [test/approval-workflow.test.ts](test/approval-workflow.test.ts): return step, insert approver, append comment
+> - [x] **Approval Template Publish Store** — publish template hiện ngay ở trang Submit Request ✅
+>   - Builder `/approval/admin/createApproval` gọi server action publish thay vì chỉ lưu `localStorage`
+>   - Template publish được lưu vào file store demo [lib/repositories/approval-template-store.ts](lib/repositories/approval-template-store.ts)
+>   - `/approval` và `/approval/admin` đọc danh sách template đã publish để hiện mẫu mới tạo
+> - [x] **Approval Phase 2/3 Hardening** — widget schema, validation, admin lifecycle ✅
+>   - Mở rộng [lib/approvals/templateSchema.ts](lib/approvals/templateSchema.ts) lên nhóm 25+ widget kiểu Lark: input, textarea, amount, formula, select, date interval, data link, field list, signature...
+>   - Thêm validator Zod [lib/approvals/templateValidation.ts](lib/approvals/templateValidation.ts); Publish sẽ chặn template thiếu tên, thiếu field hoặc workflow thiếu Submit/End
+>   - Admin template có Duplicate / Archive / Restore; trang Submit Request chỉ hiện template `published`
+>   - Submit Request render được select, multi-select, textarea, static text, attachment/image/signature ở mức MVP
+> - [x] **Approval Data Management MVP+** — bảng dữ liệu theo field + export CSV ✅
+>   - `/approval/data` hiển thị cột form data theo field thay vì JSON thô
+>   - Route `/approval/data/export` xuất CSV các request đã hoàn tất
+> - [x] **Approval Widget Renderer Fix** — render đúng input type theo widget ✅
+>   - Tách renderer [components/approvals/ApprovalFormFieldRenderer.tsx](components/approvals/ApprovalFormFieldRenderer.tsx) để field ảnh/hóa đơn dùng upload ảnh, attachment dùng file upload, contact/department dùng selector, date range dùng 2 ngày, signature dùng canvas, geolocation dùng browser GPS
+>   - Server action lưu file upload thành metadata + data URL demo cho ảnh/PDF nhỏ; detail request hiển thị preview ảnh minh chứng
+>   - Default field `Hoa don minh chung` đổi sang widget `image`, không còn text input
 > - [x] **KPI Execution Phase 2** — Personal KPI Execution theo task có trọng số ✅
 >   - Thay bảng Employee Execution bằng Personal KPI Execution: group task theo nhân sự/tháng, tính `SUM(task_weight * completion_percent / 100) / SUM(task_weight) * 100`
 >   - Thêm helper [lib/kpi/personalExecution.ts](lib/kpi/personalExecution.ts) + test case Hiếu: weight 7/3, completion 80%/100% => Personal KPI 86%

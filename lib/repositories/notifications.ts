@@ -14,9 +14,10 @@ function shouldUseDemoStore() {
 /** Trả notifications của user hiện tại (mới nhất trước). */
 export async function listMyNotifications(limit = 20): Promise<Notification[]> {
   const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
   const authUserId = user?.id ?? demo.DEMO_AUTH_USER_ID;
 
-  if (shouldUseDemoStore()) {
+  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
     return demo.demoNotifications
       .filter((n) => n.auth_user_id === authUserId)
       .slice()
@@ -42,9 +43,10 @@ export async function listMyNotifications(limit = 20): Promise<Notification[]> {
 /** Đếm số notification chưa đọc của user hiện tại. */
 export async function countMyUnread(): Promise<number> {
   const user = await getAuthenticatedUser();
+  const context = await getUserContext(user);
   const authUserId = user?.id ?? demo.DEMO_AUTH_USER_ID;
 
-  if (shouldUseDemoStore()) {
+  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
     return demo.demoNotifications.filter((n) => n.auth_user_id === authUserId && !n.read_at).length;
   }
 
@@ -86,7 +88,7 @@ export async function createNotification(input: {
     created_at: new Date().toISOString(),
   };
 
-  if (shouldUseDemoStore()) {
+  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
     demo.demoNotifications.unshift(newNoti);
     if (demo.demoNotifications.length > 200) demo.demoNotifications.length = 200;
     return newNoti;
