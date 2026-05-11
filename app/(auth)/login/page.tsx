@@ -6,6 +6,15 @@ import { Label } from "@/components/ui/label";
 import { tServer } from "@/lib/i18n/server";
 import { isDemoMode } from "@/lib/env";
 
+const DEMO_ACCOUNTS = [
+  { email: "ceo@bizos.demo", role: "CEO", color: "from-indigo-500 to-purple-600", desc: "Full access" },
+  { email: "cfo@bizos.demo", role: "CFO", color: "from-emerald-500 to-teal-600", desc: "Tài chính" },
+  { email: "hr@bizos.demo", role: "HR Admin", color: "from-pink-500 to-rose-600", desc: "Nhân sự" },
+  { email: "sales.head@bizos.demo", role: "Trưởng phòng", color: "from-amber-500 to-orange-600", desc: "Sales" },
+  { email: "nhanvien@bizos.demo", role: "Nhân viên", color: "from-sky-500 to-blue-600", desc: "Quyền cơ bản" },
+  { email: "auditor@bizos.demo", role: "Kiểm toán", color: "from-slate-500 to-gray-600", desc: "Read-only" },
+];
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -82,6 +91,34 @@ export default async function LoginPage({
           {demoMode ? "Vao demo" : t("common.login")}
         </Button>
       </form>
+
+      {/* Quick login by role */}
+      <div className="space-y-3">
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t border-[var(--line-soft)]" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-[var(--surface)] px-2 text-[var(--text-soft)]">Đăng nhập nhanh theo vai trò</span>
+          </div>
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          {DEMO_ACCOUNTS.map((acc) => (
+            <form key={acc.email} action={login}>
+              <input type="hidden" name="email" value={acc.email} />
+              <input type="hidden" name="password" value="demo123456" />
+              <input type="hidden" name="next" value={next ?? "/dashboard"} />
+              <button
+                type="submit"
+                className={`w-full rounded-xl bg-gradient-to-r ${acc.color} px-3 py-2.5 text-left text-white shadow-sm hover:shadow-md transition-all hover:scale-[1.02] active:scale-[0.98]`}
+              >
+                <div className="text-sm font-semibold">{acc.role}</div>
+                <div className="text-[11px] opacity-80">{acc.desc}</div>
+              </button>
+            </form>
+          ))}
+        </div>
+      </div>
 
       <div className="text-center text-sm text-[var(--text-soft)]">
         {t("auth.noAccount")}{" "}
