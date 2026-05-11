@@ -17,7 +17,7 @@ export async function listMyNotifications(limit = 20): Promise<Notification[]> {
   const context = await getUserContext(user);
   const authUserId = user?.id ?? demo.DEMO_AUTH_USER_ID;
 
-  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
+  if (shouldUseDemoStore()) {
     return demo.demoNotifications
       .filter((n) => n.auth_user_id === authUserId)
       .slice()
@@ -46,7 +46,7 @@ export async function countMyUnread(): Promise<number> {
   const context = await getUserContext(user);
   const authUserId = user?.id ?? demo.DEMO_AUTH_USER_ID;
 
-  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
+  if (shouldUseDemoStore()) {
     return demo.demoNotifications.filter((n) => n.auth_user_id === authUserId && !n.read_at).length;
   }
 
@@ -88,7 +88,7 @@ export async function createNotification(input: {
     created_at: new Date().toISOString(),
   };
 
-  if (shouldUseDemoStore() || context.companyId === demo.DEMO_COMPANY_ID) {
+  if (shouldUseDemoStore()) {
     demo.demoNotifications.unshift(newNoti);
     if (demo.demoNotifications.length > 200) demo.demoNotifications.length = 200;
     return newNoti;

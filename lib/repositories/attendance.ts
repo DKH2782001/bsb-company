@@ -133,7 +133,7 @@ function pickLocation(
 }
 
 function shouldRelaxAttendanceGeofence(companyId: string | null) {
-  return companyId === DEMO_COMPANY_ID || isDemoMode() || !hasSupabaseEnv();
+  return isDemoMode() || !hasSupabaseEnv();
 }
 
 export function resolveCheckInLocation(input: {

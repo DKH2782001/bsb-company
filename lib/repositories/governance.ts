@@ -37,7 +37,7 @@ export async function listAlerts() {
 export async function listApprovals() {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
-  if (!context.companyId || context.companyId === demo.DEMO_COMPANY_ID || shouldUseDemoStore()) {
+  if (!context.companyId || shouldUseDemoStore()) {
     return listDemoApprovals(demo.demoApprovals);
   }
 
@@ -277,7 +277,7 @@ export async function createApprovalRequest(input: CreateApprovalInput) {
     },
   };
 
-  if (shouldUseDemoStore() || !context.companyId || context.companyId === demo.DEMO_COMPANY_ID) {
+  if (shouldUseDemoStore() || !context.companyId) {
     demo.demoApprovals.unshift(withWorkflow);
     await prependStoredDemoApproval(withWorkflow);
     await writeAuditLog({
@@ -339,7 +339,7 @@ export async function createApprovalRequest(input: CreateApprovalInput) {
 async function persistApprovalChange(before: Approval, after: Approval, action: string) {
   const demoIdx = demo.demoApprovals.findIndex((item) => item.id === after.id);
   const storedDemoIdx = (await readStoredDemoApprovals()).findIndex((item) => item.id === after.id);
-  if (shouldUseDemoStore() || demoIdx >= 0 || storedDemoIdx >= 0 || after.company_id === demo.DEMO_COMPANY_ID) {
+  if (shouldUseDemoStore() || demoIdx >= 0 || storedDemoIdx >= 0) {
     if (demoIdx >= 0) demo.demoApprovals[demoIdx] = after;
     await upsertStoredDemoApproval(after);
     await writeAuditLog({
