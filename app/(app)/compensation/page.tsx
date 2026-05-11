@@ -12,8 +12,13 @@ import { fetchEmployees, fetchPayroll, fetchDepartments } from "@/lib/queries";
 import { formatVND, formatCompactVND, formatPercent } from "@/lib/utils";
 import type { PayrollEntry } from "@/types/domain";
 import { Wallet, TrendingUp, Users, Gift, PiggyBank, Percent } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export default async function CompensationPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/compensation");
+
   const { t } = await tServer();
   const [employees, payroll, departments] = await Promise.all([
     fetchEmployees(),

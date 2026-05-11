@@ -11,6 +11,8 @@ import { queryAuditLogs, listAuditFacets, type AuditLogFilter } from "@/lib/repo
 import { History, Shield } from "lucide-react";
 import type { AuditLog } from "@/types/domain";
 import { AuditFilterBar } from "./AuditClient";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 function toArr(v: string | string[] | undefined): string[] {
   if (!v) return [];
@@ -20,6 +22,9 @@ function toArr(v: string | string[] | undefined): string[] {
 type SearchParams = Record<string, string | string[] | undefined>;
 
 export default async function AuditPage({ searchParams }: { searchParams: Promise<SearchParams> }) {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/audit");
+
   const { t } = await tServer();
   const sp = await searchParams;
 

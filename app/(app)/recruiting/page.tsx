@@ -9,8 +9,13 @@ import { RecruitingManager } from "@/components/recruiting/RecruitingManager";
 import { fetchRequisitions, fetchDepartments } from "@/lib/queries";
 import type { JobRequisition } from "@/types/domain";
 import { UserPlus, Users, Clock, Award } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export default async function RecruitingPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/recruiting");
+
   const { t } = await tServer();
   const [requisitions, departments] = await Promise.all([
     fetchRequisitions(),

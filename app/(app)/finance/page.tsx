@@ -12,10 +12,15 @@ import { AccountingEntriesManager } from "@/components/finance/AccountingEntries
 import { fetchAccounting, fetchPayroll, fetchDepartments, demo } from "@/lib/queries";
 import { formatCompactVND, formatPercent, formatVND } from "@/lib/utils";
 import { CircleDollarSign, TrendingUp, Wallet, Landmark, PiggyBank, Percent } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export const revalidate = 300;
 
 export default async function FinancePage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/finance");
+
   const { t } = await tServer();
   const [entries, payroll, departments] = await Promise.all([
     fetchAccounting(),

@@ -44,7 +44,8 @@ import { formatCompactVND, formatPercent } from "@/lib/utils";
 
 export const revalidate = 300;
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | undefined>> }) {
+  const sp = await searchParams;
   const { t } = await tServer();
   const [
     kpis,
@@ -142,6 +143,12 @@ export default async function DashboardPage() {
 
   return (
     <div>
+      {sp.forbidden && (
+        <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 flex items-center gap-2">
+          <span className="font-semibold">⛔ Không có quyền truy cập.</span>
+          <span>Tài khoản của bạn không có quyền xem trang đó. Liên hệ admin nếu cần.</span>
+        </div>
+      )}
       <PageHeader
         helpKey="/dashboard"
         title={t("dashboard.title")}

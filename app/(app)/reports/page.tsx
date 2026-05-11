@@ -9,10 +9,15 @@ import { ProgressList } from "@/components/widgets/ProgressList";
 import { StatChip } from "@/components/widgets/StatChip";
 import { fetchReports, fetchReportSchedules } from "@/lib/queries";
 import { FileText, Download, Calendar, Mail, Clock, FileSpreadsheet, Sparkles } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export const revalidate = 300;
 
 export default async function ReportsPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/reports");
+
   const { t } = await tServer();
   const [reportsRaw, schedulesRaw] = await Promise.all([fetchReports(), fetchReportSchedules()]);
 

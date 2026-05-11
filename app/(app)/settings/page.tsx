@@ -20,8 +20,13 @@ import {
   Settings as SettingsIcon,
   FileText,
 } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export default async function SettingsPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/settings");
+
   const { t } = await tServer();
   const [company, departments, employees] = await Promise.all([fetchCompany(), fetchDepartments(), fetchEmployees()]);
 

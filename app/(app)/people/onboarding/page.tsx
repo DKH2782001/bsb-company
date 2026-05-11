@@ -10,10 +10,12 @@ import {
   listOnboardingTemplateTasks,
 } from "@/lib/repositories/onboarding";
 import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export default async function OnboardingPage() {
   const user = await getAuthenticatedUser();
   const context = await getUserContext(user);
+  requirePageRole(context, "/people/onboarding");
 
   const [templates, templateTasks, runs, runTasks, employees] = await Promise.all([
     listOnboardingTemplates(),

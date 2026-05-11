@@ -9,7 +9,8 @@ import {
   listEmployeeDocuments,
   listEmploymentContracts,
 } from "@/lib/repositories/contracts";
-import { getServiceClient } from "@/lib/repositories/shared";
+import { getAuthenticatedUser, getServiceClient, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 import type { EmployeeDocument } from "@/types/domain";
 
 async function withSignedDocumentUrls(documents: EmployeeDocument[]) {
@@ -32,6 +33,9 @@ async function withSignedDocumentUrls(documents: EmployeeDocument[]) {
 }
 
 export default async function ContractsPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/people/contracts");
+
   const [contracts, amendments, documents, dependents, employees, departments] = await Promise.all([
     listEmploymentContracts(),
     listContractAmendments(),

@@ -8,8 +8,13 @@ import { StatChip } from "@/components/widgets/StatChip";
 import { fetchKpis, fetchKpiTargets, fetchKpiActuals, fetchKpiFormulas } from "@/lib/queries";
 import { buildKpiRows } from "@/lib/kpi/cascade";
 import { TrendingUp, Target, BarChart3, LineChart } from "lucide-react";
+import { getAuthenticatedUser, getUserContext } from "@/lib/repositories/shared";
+import { requirePageRole } from "@/lib/auth/permissions";
 
 export default async function ForecastPage() {
+  const ctx = await getUserContext(await getAuthenticatedUser());
+  requirePageRole(ctx, "/forecast");
+
   const { t } = await tServer();
   const [kpis, targets, actuals, formulas] = await Promise.all([
     fetchKpis(),
