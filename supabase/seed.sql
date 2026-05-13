@@ -1021,3 +1021,21 @@ insert into audit_logs (id, company_id, actor, action, entity, entity_id, before
   ('00000000-0000-0000-0000-000000005c03','00000000-0000-0000-0000-00000000c001','00000000-0000-0000-0000-0000000000e4','task.update_status','tasks','00000000-0000-0000-0000-000000005301','{"status":"todo"}'::jsonb,'{"status":"in_progress"}'::jsonb,'2026-04-14T08:10:00Z'),
   ('00000000-0000-0000-0000-000000005c04','00000000-0000-0000-0000-00000000c001','00000000-0000-0000-0000-0000000000e3','payroll.override','payroll_entries',null,'{"bonus_total":3000000}'::jsonb,'{"bonus_total":5000000}'::jsonb,'2026-04-22T14:00:00Z')
 on conflict (id) do nothing;
+
+-- =============================================================================
+-- Scheduling seed data — shift_templates + sample schedule
+-- =============================================================================
+
+insert into shift_templates (id, company_id, code, name, start_time, end_time, break_minutes, is_overnight, min_staff, max_staff, hourly_rate_multiplier, night_multiplier, weekend_multiplier, holiday_multiplier, color, active) values
+  ('00000000-0000-0000-0000-000000007001','00000000-0000-0000-0000-00000000c001','MORNING','Ca Sáng','07:00','14:00',0,false,2,4,1.0,1.3,2.0,3.0,'#F59E0B',true),
+  ('00000000-0000-0000-0000-000000007002','00000000-0000-0000-0000-00000000c001','AFTERNOON','Ca Chiều','14:00','22:00',0,false,2,4,1.0,1.3,2.0,3.0,'#3B82F6',true),
+  ('00000000-0000-0000-0000-000000007003','00000000-0000-0000-0000-00000000c001','NIGHT','Ca Đêm','22:00','06:00',0,true,1,2,1.3,1.3,2.0,3.0,'#6D5EF7',true)
+on conflict (company_id, code) do update set
+  name = excluded.name,
+  start_time = excluded.start_time,
+  end_time = excluded.end_time,
+  break_minutes = excluded.break_minutes,
+  is_overnight = excluded.is_overnight,
+  min_staff = excluded.min_staff,
+  max_staff = excluded.max_staff,
+  color = excluded.color;
