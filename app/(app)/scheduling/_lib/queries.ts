@@ -190,6 +190,9 @@ export async function getSchedulingPageData(
 
     const user = await getAuthenticatedUser();
     const ctx = await getUserContext(user);
+    if (!ctx.companyId) {
+      return buildDemoSchedulingData(weekStart, weekEnd);
+    }
     const companyId = ctx.companyId ?? DEMO_COMPANY_ID;
     const db = await getDbClientOrThrow();
 

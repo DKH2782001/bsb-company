@@ -15,6 +15,7 @@ import { writeAuditLog } from "@/lib/repositories/audit";
 import {
   getAuthenticatedUser,
   getDbClientOrThrow,
+  getServiceClient,
   getUserContext,
 } from "@/lib/repositories/shared";
 import { formatLocalISODate } from "@/lib/utils";
@@ -54,10 +55,21 @@ function inDemoMode(): boolean {
 async function getEmployeeContext() {
   const user = await getAuthenticatedUser();
   const ctx  = await getUserContext(user);
+  const roles = ctx.roles ?? [];
   return {
     companyId:  ctx.companyId  ?? DEMO_COMPANY_ID,
     employeeId: ctx.employeeId ?? demoEmployees[0]?.id ?? null,
+    roles,
+    canManageSchedule: roles.some((role) => ["ceo", "hr_admin", "dept_head"].includes(role)),
+    useDemoStore: inDemoMode() || !ctx.companyId,
   };
+}
+
+async function getScheduleWriteClient(context: Awaited<ReturnType<typeof getEmployeeContext>>) {
+  if (!context.canManageSchedule) {
+    throw new Error("Ban khong co quyen xep lich. Can role CEO, HR Admin hoac Truong phong.");
+  }
+  return getServiceClient();
 }
 
 function getMondayOfWeek(dateStr: string): Date {
@@ -85,9 +97,10 @@ const demoStore: {
 // ─── TEMPLATES ────────────────────────────────────────────────
 
 export async function getShiftTemplates(): Promise<ShiftTemplate[]> {
-  if (inDemoMode()) return demoStore.templates.filter((t) => t.active);
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) return demoStore.templates.filter((t) => t.active);
 
-  const { companyId } = await getEmployeeContext();
+  const { companyId } = context;
   const db = await getDbClientOrThrow();
   const { data } = await db
     .from("shift_templates")
@@ -101,7 +114,8 @@ export async function getShiftTemplates(): Promise<ShiftTemplate[]> {
 export async function upsertShiftTemplate(
   input: Partial<ShiftTemplate> & { code: string; name: string; start_time: string; end_time: string },
 ): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const idx = demoStore.templates.findIndex((t) => t.id === input.id);
     if (idx >= 0) {
       demoStore.templates[idx] = { ...demoStore.templates[idx], ...input } as ShiftTemplate;
@@ -126,30 +140,34 @@ export async function upsertShiftTemplate(
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   const payload = { ...input, company_id: companyId, updated_at: new Date().toISOString() };
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tblShiftTemplates = db.from("shift_templates") as unknown as any;
+  let result: { error: { message: string } | null };
   if (input.id) {
-    await tblShiftTemplates.update(payload).eq("id", input.id).eq("company_id", companyId);
+    result = await tblShiftTemplates.update(payload).eq("id", input.id).eq("company_id", companyId);
   } else {
-    await tblShiftTemplates.insert(payload);
+    result = await tblShiftTemplates.insert(payload);
   }
+  if (result.error) throw new Error(result.error.message);
   await writeAuditLog({ action: "scheduling.template.upsert", entity: "shift_templates", entityId: input.id ?? "new", meta: { name: input.name } });
 }
 
 export async function deleteShiftTemplate(id: string): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const idx = demoStore.templates.findIndex((t) => t.id === id);
     if (idx >= 0) demoStore.templates[idx] = { ...demoStore.templates[idx], active: false };
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("shift_templates") as unknown as any).update({ active: false }).eq("id", id).eq("company_id", companyId);
+  const { error } = await (db.from("shift_templates") as unknown as any).update({ active: false }).eq("id", id).eq("company_id", companyId);
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: "scheduling.template.delete", entity: "shift_templates", entityId: id, meta: {} });
 }
 
@@ -162,7 +180,8 @@ export async function getWeekSchedule(weekStartStr?: string): Promise<WeekSchedu
   const weekStart = formatLocalISODate(monday);
   const weekEnd   = formatLocalISODate(sunday);
 
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const period = demoStore.periods.find((p) => p.week_start === weekStart) ?? null;
     const shifts = demoStore.shifts
       .filter((s) => s.shift_date >= weekStart && s.shift_date <= weekEnd)
@@ -170,7 +189,7 @@ export async function getWeekSchedule(weekStartStr?: string): Promise<WeekSchedu
     return { period, shifts, templates: demoStore.templates.filter((t) => t.active), weekStart, weekEnd };
   }
 
-  const { companyId } = await getEmployeeContext();
+  const { companyId } = context;
   const db = await getDbClientOrThrow();
 
   const [{ data: periods }, { data: rawShifts }, { data: templates }] = await Promise.all([
@@ -202,7 +221,8 @@ function enrichShift(s: ScheduledShift, templates: ShiftTemplate[]): ScheduledSh
 // ─── PERIOD MANAGEMENT ────────────────────────────────────────
 
 export async function getOrCreatePeriod(weekStart: string): Promise<SchedulePeriod> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const existing = demoStore.periods.find((p) => p.week_start === weekStart);
     if (existing) return existing;
     const monday = getMondayOfWeek(weekStart);
@@ -221,22 +241,27 @@ export async function getOrCreatePeriod(weekStart: string): Promise<SchedulePeri
     return newPeriod;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   const monday = getMondayOfWeek(weekStart);
   const sunday = new Date(monday);
   sunday.setDate(sunday.getDate() + 6);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tblPeriods = db.from("schedule_periods") as unknown as any;
-  const { data } = await tblPeriods
+  const { data, error } = await tblPeriods
     .upsert({ company_id: companyId, week_start: weekStart, week_end: formatLocalISODate(sunday) }, { onConflict: "company_id,week_start" })
     .select()
     .single();
+  if (error) throw new Error(error.message);
+  if (!data) {
+    throw new Error("Khong tao duoc ky xep lich. Kiem tra company context va quyen truy cap.");
+  }
   return data as unknown as SchedulePeriod;
 }
 
 export async function publishPeriod(periodId: string): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const idx = demoStore.periods.findIndex((p) => p.id === periodId);
     if (idx >= 0) {
       demoStore.periods[idx] = { ...demoStore.periods[idx], status: "published", published_at: new Date().toISOString() };
@@ -244,10 +269,14 @@ export async function publishPeriod(periodId: string): Promise<void> {
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("schedule_periods") as unknown as any).update({ status: "published", published_at: new Date().toISOString() }).eq("id", periodId).eq("company_id", companyId);
+  const { error } = await (db.from("schedule_periods") as unknown as any)
+    .update({ status: "published", published_at: new Date().toISOString() })
+    .eq("id", periodId)
+    .eq("company_id", companyId);
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: "scheduling.period.publish", entity: "schedule_periods", entityId: periodId, meta: {} });
 }
 
@@ -259,7 +288,8 @@ export async function assignShift(input: {
   employeeId: string;
   shiftDate: string;
 }): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     demoStore.shifts.push({
       id: `ss-${Date.now()}`,
       company_id: DEMO_COMPANY_ID,
@@ -275,44 +305,48 @@ export async function assignShift(input: {
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("scheduled_shifts") as unknown as any).insert({
+  const { error } = await (db.from("scheduled_shifts") as unknown as any).insert({
     company_id: companyId,
     period_id: input.periodId,
     shift_template_id: input.templateId,
     employee_id: input.employeeId,
     shift_date: input.shiftDate,
   });
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: "scheduling.shift.assign", entity: "scheduled_shifts", entityId: input.employeeId, meta: { date: input.shiftDate } });
 }
 
 export async function removeShift(shiftId: string): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const idx = demoStore.shifts.findIndex((s) => s.id === shiftId);
     if (idx >= 0) demoStore.shifts[idx] = { ...demoStore.shifts[idx], status: "cancelled" };
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId } = context;
+  const db = await getScheduleWriteClient(context);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("scheduled_shifts") as unknown as any).update({ status: "cancelled" }).eq("id", shiftId).eq("company_id", companyId);
+  const { error } = await (db.from("scheduled_shifts") as unknown as any).update({ status: "cancelled" }).eq("id", shiftId).eq("company_id", companyId);
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: "scheduling.shift.remove", entity: "scheduled_shifts", entityId: shiftId, meta: {} });
 }
 
 // ─── SWAP REQUESTS ────────────────────────────────────────────
 
 export async function getSwapRequests(filter: "pending" | "all" = "pending"): Promise<SwapRequestWithMeta[]> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const swaps = filter === "pending"
       ? demoStore.swaps.filter((s) => s.status === "pending")
       : demoStore.swaps;
     return swaps.map((sw) => enrichSwap(sw));
   }
 
-  const { companyId } = await getEmployeeContext();
+  const { companyId } = context;
   const db = await getDbClientOrThrow();
   const query = db.from("shift_swap_requests").select("*").eq("company_id", companyId);
   const { data } = filter === "pending" ? await query.eq("status", "pending") : await query.order("created_at", { ascending: false });
@@ -334,7 +368,8 @@ function enrichSwap(sw: ShiftSwapRequest): SwapRequestWithMeta {
 }
 
 export async function decideSwapRequest(id: string, decision: "approved" | "rejected", note?: string): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     const idx = demoStore.swaps.findIndex((s) => s.id === id);
     if (idx >= 0) {
       demoStore.swaps[idx] = {
@@ -348,13 +383,14 @@ export async function decideSwapRequest(id: string, decision: "approved" | "reje
     return;
   }
 
-  const { companyId, employeeId } = await getEmployeeContext();
-  const db = await getDbClientOrThrow();
+  const { companyId, employeeId } = context;
+  const db = await getScheduleWriteClient(context);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("shift_swap_requests") as unknown as any)
+  const { error } = await (db.from("shift_swap_requests") as unknown as any)
     .update({ status: decision, decided_by: employeeId, decided_at: new Date().toISOString(), decision_note: note ?? null })
     .eq("id", id)
     .eq("company_id", companyId);
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: `scheduling.swap.${decision}`, entity: "shift_swap_requests", entityId: id, meta: { note } });
 }
 
@@ -365,7 +401,8 @@ export async function createSwapRequest(input: {
   receiverId?: string;
   reason?: string;
 }): Promise<void> {
-  if (inDemoMode()) {
+  const context = await getEmployeeContext();
+  if (context.useDemoStore) {
     demoStore.swaps.unshift({
       id: `sw-${Date.now()}`,
       company_id: DEMO_COMPANY_ID,
@@ -383,10 +420,10 @@ export async function createSwapRequest(input: {
     return;
   }
 
-  const { companyId } = await getEmployeeContext();
+  const { companyId } = context;
   const db = await getDbClientOrThrow();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  await (db.from("shift_swap_requests") as unknown as any).insert({
+  const { error } = await (db.from("shift_swap_requests") as unknown as any).insert({
     company_id: companyId,
     request_type: input.requestType,
     requester_shift_id: input.requesterShiftId,
@@ -394,5 +431,6 @@ export async function createSwapRequest(input: {
     receiver_id: input.receiverId ?? null,
     reason: input.reason ?? null,
   });
+  if (error) throw new Error(error.message);
   await writeAuditLog({ action: "scheduling.swap.create", entity: "shift_swap_requests", entityId: input.requesterShiftId, meta: {} });
 }
